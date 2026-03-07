@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DiffPaneView: View {
     @ObservedObject var file: DiffFile
+    let tokens: [HighlightToken]
     let onFileDrop: (URL) -> Void
     let onRecentPairSelected: ((RecentPair) -> Void)?
     let onClear: () -> Void
@@ -27,6 +28,7 @@ struct DiffPaneView: View {
                         )
                         EditorTextView(
                             file: file,
+                            tokens: tokens,
                             onFocus: onFocus,
                             onScrollChange: { scrollOffset = $0 }
                         )

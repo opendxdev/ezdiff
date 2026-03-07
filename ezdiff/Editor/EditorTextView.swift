@@ -7,6 +7,7 @@ import AppKit
 
 struct EditorTextView: NSViewRepresentable {
     let file: DiffFile
+    let tokens: [HighlightToken]
     let onFocus: (() -> Void)?
     let onScrollChange: ((CGFloat) -> Void)?
 
@@ -59,6 +60,21 @@ struct EditorTextView: NSViewRepresentable {
         textView.isAutomaticTextCompletionEnabled = false
         textView.isAutomaticLinkDetectionEnabled = false
         textView.usesFontPanel = false
+
+        // Allow horizontal scrolling (no line wrap)
+        textView.isHorizontallyResizable = true
+        textView.textContainer?.widthTracksTextView = false
+        textView.textContainer?.size = NSSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+        textView.maxSize = NSSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+        scrollView.hasHorizontalScroller = true
+        scrollView.hasVerticalScroller = true
+
         textView.delegate = context.coordinator
 
         let coordinator = context.coordinator
@@ -95,6 +111,20 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.isUpdatingFromExternal = true
             textView.string = file.content
             coordinator.isUpdatingFromExternal = false
+        }
+
+        // Apply syntax highlighting via textStorage (TextKit 2 safe)
+        if !tokens.isEmpty, let textStorage = textView.textStorage {
+            let source = textView.string
+            let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+            let theme = SyntaxHighlighter.currentTheme
+            textStorage.beginEditing()
+            textStorage.setAttributes(
+                [.font: font, .foregroundColor: NSColor.textColor],
+                range: NSRange(location: 0, length: textStorage.length)
+            )
+            SyntaxHighlighter.applyHighlighting(to: textStorage, tokens: tokens, source: source, theme: theme)
+            textStorage.endEditing()
         }
     }
 }

@@ -3,6 +3,8 @@ import SwiftUI
 struct SideBySideView: View {
     @ObservedObject var leftFile: DiffFile
     @ObservedObject var rightFile: DiffFile
+    let leftTokens: [HighlightToken]
+    let rightTokens: [HighlightToken]
     let onLeftFileDrop: (URL) -> Void
     let onRightFileDrop: (URL) -> Void
     let onRecentPairSelected: (RecentPair) -> Void
@@ -14,6 +16,7 @@ struct SideBySideView: View {
         HStack(spacing: 0) {
             DiffPaneView(
                 file: leftFile,
+                tokens: leftTokens,
                 onFileDrop: onLeftFileDrop,
                 onRecentPairSelected: onRecentPairSelected,
                 onClear: onClearLeft,
@@ -24,6 +27,7 @@ struct SideBySideView: View {
 
             DiffPaneView(
                 file: rightFile,
+                tokens: rightTokens,
                 onFileDrop: onRightFileDrop,
                 onRecentPairSelected: onRecentPairSelected,
                 onClear: onClearRight,
