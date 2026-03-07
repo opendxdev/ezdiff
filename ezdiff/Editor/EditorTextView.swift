@@ -66,6 +66,7 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.isUpdatingFromExternal = true
             textView.string = file.content
             coordinator.isUpdatingFromExternal = false
+            coordinator.lastHighlightState = HighlightState()
         }
 
         // Apply word wrap setting
@@ -86,17 +87,23 @@ struct EditorTextView: NSViewRepresentable {
         }
 
         // Compute and report line layouts for gutter alignment
-        if wordWrapEnabled {
-            let containerWidth = nsView.contentSize.width
-            let layouts = TextViewConfigurator.computeLineLayouts(
-                text: textView.string,
-                containerWidth: containerWidth,
-                font: TextViewConfigurator.editorFont,
-                textInset: textView.textContainerInset.width
-            )
-            coordinator.onLineLayoutChange?(layouts)
-        } else {
-            coordinator.onLineLayoutChange?([])
+        // Deferred to avoid "Modifying state during view update" when setting @State lineLayouts
+        let currentText = textView.string
+        let currentInset = textView.textContainerInset.width
+        let wrapEnabled = wordWrapEnabled
+        DispatchQueue.main.async {
+            if wrapEnabled {
+                let containerWidth = nsView.contentSize.width
+                let layouts = TextViewConfigurator.computeLineLayouts(
+                    text: currentText,
+                    containerWidth: containerWidth,
+                    font: TextViewConfigurator.editorFont,
+                    textInset: currentInset
+                )
+                coordinator.onLineLayoutChange?(layouts)
+            } else {
+                coordinator.onLineLayoutChange?([])
+            }
         }
     }
 }
