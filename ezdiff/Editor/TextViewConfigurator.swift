@@ -41,4 +41,30 @@ enum TextViewConfigurator {
 
         return textView
     }
+
+    /// Toggles word wrap on/off for the text view.
+    static func setWordWrap(_ enabled: Bool, scrollView: NSScrollView, textView: NSTextView) {
+        if enabled {
+            textView.isHorizontallyResizable = false
+            textView.textContainer?.widthTracksTextView = true
+            textView.textContainer?.size.width = scrollView.contentSize.width
+            textView.maxSize = NSSize(
+                width: scrollView.contentSize.width,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+            scrollView.hasHorizontalScroller = false
+        } else {
+            textView.isHorizontallyResizable = true
+            textView.textContainer?.widthTracksTextView = false
+            textView.textContainer?.size = NSSize(
+                width: CGFloat.greatestFiniteMagnitude,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+            textView.maxSize = NSSize(
+                width: CGFloat.greatestFiniteMagnitude,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+            scrollView.hasHorizontalScroller = true
+        }
+    }
 }

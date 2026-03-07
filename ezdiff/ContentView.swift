@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showPreview = false
     @State private var vimModeEnabled = false
     @State private var ignoreWhitespace = false
+    @State private var wordWrapEnabled = false
     @State private var diffTask: Task<Void, Never>?
     @State private var focusedSide: PaneSide = .left
     @State private var showSaveError = false
@@ -36,6 +37,7 @@ struct ContentView: View {
                 rightTokens: rightHighlighter.tokens,
                 diffResult: diffResult,
                 scrollCoordinator: scrollCoordinator,
+                wordWrapEnabled: wordWrapEnabled,
                 onLeftFileDrop: { loadFile($0, into: leftFile) },
                 onRightFileDrop: { loadFile($0, into: rightFile) },
                 onRecentPairSelected: loadRecentPair,
@@ -46,11 +48,8 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarView(
-                displayMode: $displayMode,
-                showPreview: $showPreview,
-                vimModeEnabled: $vimModeEnabled,
                 ignoreWhitespace: $ignoreWhitespace,
-                canShowPreview: canShowPreview,
+                wordWrapEnabled: $wordWrapEnabled,
                 onCopyDiff: copyDiff,
                 onExportDiff: exportDiff
             )

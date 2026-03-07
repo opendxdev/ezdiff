@@ -10,6 +10,7 @@ struct EditorTextView: NSViewRepresentable {
     let tokens: [HighlightToken]
     let diffLines: [DiffLine]
     let side: PaneSide
+    let wordWrapEnabled: Bool
     let onFocus: (() -> Void)?
     let onScrollChange: ((CGFloat) -> Void)?
     let onScrollViewReady: ((NSScrollView) -> Void)?
@@ -61,6 +62,9 @@ struct EditorTextView: NSViewRepresentable {
             textView.string = file.content
             coordinator.isUpdatingFromExternal = false
         }
+
+        // Apply word wrap setting
+        TextViewConfigurator.setWordWrap(wordWrapEnabled, scrollView: nsView, textView: textView)
 
         // Apply highlighting only when tokens or diff lines change
         let newState = HighlightState(tokenCount: tokens.count, diffLineCount: diffLines.count)

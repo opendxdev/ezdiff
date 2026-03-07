@@ -6,6 +6,7 @@ struct DiffPaneView: View {
     let tokens: [HighlightToken]
     let diffLines: [DiffLine]
     let side: PaneSide
+    let wordWrapEnabled: Bool
     let onFileDrop: (URL) -> Void
     let onRecentPairSelected: ((RecentPair) -> Void)?
     let onClear: () -> Void
@@ -35,6 +36,7 @@ struct DiffPaneView: View {
                             tokens: tokens,
                             diffLines: diffLines,
                             side: side,
+                            wordWrapEnabled: wordWrapEnabled,
                             onFocus: onFocus,
                             onScrollChange: { scrollOffset = $0 },
                             onScrollViewReady: onScrollViewReady

@@ -7,6 +7,7 @@ struct SideBySideView: View {
     let rightTokens: [HighlightToken]
     let diffResult: DiffResult
     @ObservedObject var scrollCoordinator: SyncScrollCoordinator
+    let wordWrapEnabled: Bool
     let onLeftFileDrop: (URL) -> Void
     let onRightFileDrop: (URL) -> Void
     let onRecentPairSelected: (RecentPair) -> Void
@@ -21,6 +22,7 @@ struct SideBySideView: View {
                 tokens: leftTokens,
                 diffLines: diffResult.leftLines,
                 side: .left,
+                wordWrapEnabled: wordWrapEnabled,
                 onFileDrop: onLeftFileDrop,
                 onRecentPairSelected: onRecentPairSelected,
                 onClear: onClearLeft,
@@ -35,6 +37,7 @@ struct SideBySideView: View {
                 tokens: rightTokens,
                 diffLines: diffResult.rightLines,
                 side: .right,
+                wordWrapEnabled: wordWrapEnabled,
                 onFileDrop: onRightFileDrop,
                 onRecentPairSelected: onRecentPairSelected,
                 onClear: onClearRight,
