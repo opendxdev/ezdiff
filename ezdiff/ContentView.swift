@@ -18,6 +18,14 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if !leftFile.isEmpty && !rightFile.isEmpty {
+                StatsBarView(
+                    stats: diffResult.stats,
+                    leftLanguage: leftFile.detectedLanguage,
+                    rightLanguage: rightFile.detectedLanguage
+                )
+            }
+
             SideBySideView(
                 leftFile: leftFile,
                 rightFile: rightFile,
