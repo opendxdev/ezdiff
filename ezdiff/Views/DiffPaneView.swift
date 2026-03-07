@@ -1,12 +1,16 @@
 import SwiftUI
+import AppKit
 
 struct DiffPaneView: View {
     @ObservedObject var file: DiffFile
     let tokens: [HighlightToken]
+    let diffLines: [DiffLine]
+    let side: PaneSide
     let onFileDrop: (URL) -> Void
     let onRecentPairSelected: ((RecentPair) -> Void)?
     let onClear: () -> Void
     let onFocus: (() -> Void)?
+    let onScrollViewReady: ((NSScrollView) -> Void)?
 
     @State private var scrollOffset: CGFloat = 0
 
@@ -29,8 +33,11 @@ struct DiffPaneView: View {
                         EditorTextView(
                             file: file,
                             tokens: tokens,
+                            diffLines: diffLines,
+                            side: side,
                             onFocus: onFocus,
-                            onScrollChange: { scrollOffset = $0 }
+                            onScrollChange: { scrollOffset = $0 },
+                            onScrollViewReady: onScrollViewReady
                         )
                     }
                 }

@@ -5,6 +5,8 @@ struct SideBySideView: View {
     @ObservedObject var rightFile: DiffFile
     let leftTokens: [HighlightToken]
     let rightTokens: [HighlightToken]
+    let diffResult: DiffResult
+    @ObservedObject var scrollCoordinator: SyncScrollCoordinator
     let onLeftFileDrop: (URL) -> Void
     let onRightFileDrop: (URL) -> Void
     let onRecentPairSelected: (RecentPair) -> Void
@@ -17,10 +19,13 @@ struct SideBySideView: View {
             DiffPaneView(
                 file: leftFile,
                 tokens: leftTokens,
+                diffLines: diffResult.leftLines,
+                side: .left,
                 onFileDrop: onLeftFileDrop,
                 onRecentPairSelected: onRecentPairSelected,
                 onClear: onClearLeft,
-                onFocus: { onFocusChanged?(.left) }
+                onFocus: { onFocusChanged?(.left) },
+                onScrollViewReady: { scrollCoordinator.register(scrollView: $0, side: .left) }
             )
 
             Divider()
@@ -28,10 +33,13 @@ struct SideBySideView: View {
             DiffPaneView(
                 file: rightFile,
                 tokens: rightTokens,
+                diffLines: diffResult.rightLines,
+                side: .right,
                 onFileDrop: onRightFileDrop,
                 onRecentPairSelected: onRecentPairSelected,
                 onClear: onClearRight,
-                onFocus: { onFocusChanged?(.right) }
+                onFocus: { onFocusChanged?(.right) },
+                onScrollViewReady: { scrollCoordinator.register(scrollView: $0, side: .right) }
             )
         }
     }

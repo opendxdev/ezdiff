@@ -7,6 +7,7 @@ struct ContentView: View {
     @StateObject private var rightFile = DiffFile()
     @StateObject private var leftHighlighter = AsyncHighlightPipeline()
     @StateObject private var rightHighlighter = AsyncHighlightPipeline()
+    @StateObject private var scrollCoordinator = SyncScrollCoordinator()
 
     @State private var diffResult = DiffResult.empty
     @State private var displayMode: DisplayMode = .sideBySide
@@ -33,6 +34,8 @@ struct ContentView: View {
                 rightFile: rightFile,
                 leftTokens: leftHighlighter.tokens,
                 rightTokens: rightHighlighter.tokens,
+                diffResult: diffResult,
+                scrollCoordinator: scrollCoordinator,
                 onLeftFileDrop: { loadFile($0, into: leftFile) },
                 onRightFileDrop: { loadFile($0, into: rightFile) },
                 onRecentPairSelected: loadRecentPair,
