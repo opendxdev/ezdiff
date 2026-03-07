@@ -11,6 +11,7 @@ extension EditorTextView {
         weak var file: DiffFile?
         var onFocus: (() -> Void)?
         var onScrollChange: ((CGFloat) -> Void)?
+        var onLineLayoutChange: (([LineLayout]) -> Void)?
         var isUpdatingFromExternal = false
         var scrollObserver: NSObjectProtocol?
         var lastHighlightState = HighlightState()

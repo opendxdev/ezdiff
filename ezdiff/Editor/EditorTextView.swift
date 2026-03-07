@@ -13,6 +13,7 @@ struct EditorTextView: NSViewRepresentable {
     let wordWrapEnabled: Bool
     let onFocus: (() -> Void)?
     let onScrollChange: ((CGFloat) -> Void)?
+    let onLineLayoutChange: (([LineLayout]) -> Void)?
     let onScrollViewReady: ((NSScrollView) -> Void)?
 
     func makeCoordinator() -> Coordinator {
@@ -29,6 +30,7 @@ struct EditorTextView: NSViewRepresentable {
         coordinator.file = file
         coordinator.onFocus = onFocus
         coordinator.onScrollChange = onScrollChange
+        coordinator.onLineLayoutChange = onLineLayoutChange
 
         // Observe scroll position changes (for line number gutter)
         scrollView.contentView.postsBoundsChangedNotifications = true
@@ -44,6 +46,8 @@ struct EditorTextView: NSViewRepresentable {
 
         textView.string = file.content
 
+        TextViewConfigurator.setWordWrap(wordWrapEnabled, scrollView: scrollView, textView: textView)
+
         onScrollViewReady?(scrollView)
 
         return scrollView
@@ -56,6 +60,7 @@ struct EditorTextView: NSViewRepresentable {
         coordinator.file = file
         coordinator.onFocus = onFocus
         coordinator.onScrollChange = onScrollChange
+        coordinator.onLineLayoutChange = onLineLayoutChange
 
         if file.content != textView.string {
             coordinator.isUpdatingFromExternal = true
@@ -78,6 +83,20 @@ struct EditorTextView: NSViewRepresentable {
                 source: textView.string,
                 font: TextViewConfigurator.editorFont
             )
+        }
+
+        // Compute and report line layouts for gutter alignment
+        if wordWrapEnabled {
+            let containerWidth = nsView.contentSize.width
+            let layouts = TextViewConfigurator.computeLineLayouts(
+                text: textView.string,
+                containerWidth: containerWidth,
+                font: TextViewConfigurator.editorFont,
+                textInset: textView.textContainerInset.width
+            )
+            coordinator.onLineLayoutChange?(layouts)
+        } else {
+            coordinator.onLineLayoutChange?([])
         }
     }
 }

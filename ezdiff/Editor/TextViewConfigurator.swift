@@ -1,5 +1,11 @@
 import AppKit
 
+struct LineLayout: Equatable {
+    let lineNumber: Int
+    let yOffset: CGFloat
+    let height: CGFloat
+}
+
 enum TextViewConfigurator {
 
     static let editorFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
@@ -66,5 +72,51 @@ enum TextViewConfigurator {
             )
             scrollView.hasHorizontalScroller = true
         }
+    }
+
+    /// Computes visual line layouts for line number gutter alignment.
+    /// Uses NSString.boundingRect to calculate how many visual rows each logical line occupies.
+    static func computeLineLayouts(text: String, containerWidth: CGFloat, font: NSFont, textInset: CGFloat) -> [LineLayout] {
+        guard !text.isEmpty, containerWidth > 0 else { return [] }
+
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        let nsText = text as NSString
+        // Account for text container inset (left + right)
+        let wrapWidth = max(containerWidth - textInset * 2, 50)
+        let constraintSize = CGSize(width: wrapWidth, height: .greatestFiniteMagnitude)
+        let singleLineHeight = ceil(font.ascender - font.descender + font.leading)
+
+        var layouts: [LineLayout] = []
+        var lineStart = 0
+        var lineNumber = 1
+        var yOffset: CGFloat = textInset // start after top inset
+
+        while lineStart <= nsText.length {
+            let lineRange: NSRange
+            if lineStart == nsText.length {
+                // Empty trailing line after final newline
+                layouts.append(LineLayout(lineNumber: lineNumber, yOffset: yOffset, height: singleLineHeight))
+                break
+            } else {
+                lineRange = nsText.lineRange(for: NSRange(location: lineStart, length: 0))
+            }
+
+            // Measure the visual height of this logical line when wrapped
+            let lineStr = nsText.substring(with: lineRange) as NSString
+            let boundingRect = lineStr.boundingRect(
+                with: constraintSize,
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: attrs
+            )
+            let lineHeight = max(ceil(boundingRect.height), singleLineHeight)
+
+            layouts.append(LineLayout(lineNumber: lineNumber, yOffset: yOffset, height: lineHeight))
+
+            yOffset += lineHeight
+            lineNumber += 1
+            lineStart = NSMaxRange(lineRange)
+        }
+
+        return layouts
     }
 }

@@ -14,6 +14,7 @@ struct DiffPaneView: View {
     let onScrollViewReady: ((NSScrollView) -> Void)?
 
     @State private var scrollOffset: CGFloat = 0
+    @State private var lineLayouts: [LineLayout] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,7 +30,8 @@ struct DiffPaneView: View {
                         LineNumberGutterView(
                             text: file.content,
                             scrollOffset: scrollOffset,
-                            viewportHeight: geo.size.height
+                            viewportHeight: geo.size.height,
+                            lineLayouts: lineLayouts
                         )
                         EditorTextView(
                             file: file,
@@ -39,6 +41,7 @@ struct DiffPaneView: View {
                             wordWrapEnabled: wordWrapEnabled,
                             onFocus: onFocus,
                             onScrollChange: { scrollOffset = $0 },
+                            onLineLayoutChange: { lineLayouts = $0 },
                             onScrollViewReady: onScrollViewReady
                         )
                     }
