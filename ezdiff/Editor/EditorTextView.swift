@@ -17,6 +17,7 @@ struct EditorTextView: NSViewRepresentable {
         var onScrollChange: ((CGFloat) -> Void)?
         var isUpdatingFromExternal = false
         var scrollObserver: NSObjectProtocol?
+        var lastAppliedTokenCount: Int = -1
 
         func textDidChange(_ notification: Notification) {
             guard !isUpdatingFromExternal,
@@ -113,8 +114,10 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.isUpdatingFromExternal = false
         }
 
-        // Apply syntax highlighting via textStorage (TextKit 2 safe)
-        if !tokens.isEmpty, let textStorage = textView.textStorage {
+        // Apply syntax highlighting only when tokens change (TextKit 2 safe)
+        let tokenCount = tokens.count
+        if tokenCount != coordinator.lastAppliedTokenCount, let textStorage = textView.textStorage {
+            coordinator.lastAppliedTokenCount = tokenCount
             let source = textView.string
             let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
             let theme = SyntaxHighlighter.currentTheme
@@ -123,7 +126,9 @@ struct EditorTextView: NSViewRepresentable {
                 [.font: font, .foregroundColor: NSColor.textColor],
                 range: NSRange(location: 0, length: textStorage.length)
             )
-            SyntaxHighlighter.applyHighlighting(to: textStorage, tokens: tokens, source: source, theme: theme)
+            if !tokens.isEmpty {
+                SyntaxHighlighter.applyHighlighting(to: textStorage, tokens: tokens, source: source, theme: theme)
+            }
             textStorage.endEditing()
         }
     }
