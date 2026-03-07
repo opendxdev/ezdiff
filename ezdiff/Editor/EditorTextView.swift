@@ -61,9 +61,10 @@ struct EditorTextView: NSViewRepresentable {
         textView.usesFontPanel = false
         textView.delegate = context.coordinator
 
-        context.coordinator.file = file
-        context.coordinator.onFocus = onFocus
-        context.coordinator.onScrollChange = onScrollChange
+        let coordinator = context.coordinator
+        coordinator.file = file
+        coordinator.onFocus = onFocus
+        coordinator.onScrollChange = onScrollChange
 
         // Observe scroll position changes
         scrollView.contentView.postsBoundsChangedNotifications = true
@@ -71,9 +72,9 @@ struct EditorTextView: NSViewRepresentable {
             forName: NSView.boundsDidChangeNotification,
             object: scrollView.contentView,
             queue: .main
-        ) { [weak context.coordinator] notification in
+        ) { [weak coordinator] notification in
             guard let clipView = notification.object as? NSClipView else { return }
-            context.coordinator?.onScrollChange?(clipView.bounds.origin.y)
+            coordinator?.onScrollChange?(clipView.bounds.origin.y)
         }
         context.coordinator.scrollObserver = scrollObs
 
