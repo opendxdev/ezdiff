@@ -76,13 +76,16 @@ enum TextViewConfigurator {
 
     /// Computes visual line layouts for line number gutter alignment.
     /// Uses NSString.boundingRect to calculate how many visual rows each logical line occupies.
-    static func computeLineLayouts(text: String, containerWidth: CGFloat, font: NSFont, textInset: CGFloat) -> [LineLayout] {
+    /// When wordWrapEnabled is false, uses infinite width so each line is single-height
+    /// but still produces accurate Y offsets matching the text view.
+    static func computeLineLayouts(text: String, containerWidth: CGFloat, font: NSFont, textInset: CGFloat, wordWrapEnabled: Bool) -> [LineLayout] {
         guard !text.isEmpty, containerWidth > 0 else { return [] }
 
         let attrs: [NSAttributedString.Key: Any] = [.font: font]
         let nsText = text as NSString
-        // Account for text container inset (left + right)
-        let wrapWidth = max(containerWidth - textInset * 2, 50)
+        let wrapWidth = wordWrapEnabled
+            ? max(containerWidth - textInset * 2, 50)
+            : CGFloat.greatestFiniteMagnitude
         let constraintSize = CGSize(width: wrapWidth, height: .greatestFiniteMagnitude)
         let singleLineHeight = ceil(font.ascender - font.descender + font.leading)
 

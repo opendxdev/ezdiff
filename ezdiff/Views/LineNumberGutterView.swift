@@ -7,16 +7,10 @@ struct LineNumberGutterView: View {
     let lineLayouts: [LineLayout]
 
     private let gutterWidth: CGFloat = 44
-    private let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-    private let textInsetHeight: CGFloat = 4
-
-    private var lineHeight: CGFloat {
-        ceil(font.ascender - font.descender + font.leading)
-    }
-
-    private var totalLines: Int {
-        text.isEmpty ? 0 : text.components(separatedBy: "\n").count
-    }
+    private let singleLineHeight: CGFloat = {
+        let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        return ceil(font.ascender - font.descender + font.leading)
+    }()
 
     var body: some View {
         Canvas { context, size in
@@ -33,45 +27,45 @@ struct LineNumberGutterView: View {
             }
             context.stroke(separatorPath, with: .color(Color(nsColor: .separatorColor)), lineWidth: 1)
 
-            guard totalLines > 0 else { return }
+            guard !text.isEmpty, !lineLayouts.isEmpty else { return }
 
-            if lineLayouts.isEmpty {
-                drawFixedHeight(context: context, size: size)
-            } else {
-                drawWithLayouts(context: context, size: size)
-            }
+            drawWithLayouts(context: context, size: size)
         }
         .frame(width: gutterWidth)
     }
 
-    // MARK: - Fixed height mode (no word wrap)
+    // MARK: - Layout-aware drawing
 
-    private func drawFixedHeight(context: GraphicsContext, size: CGSize) {
-        let lh = lineHeight
-        let firstVisible = max(0, Int((scrollOffset - textInsetHeight) / lh))
-        let lastVisible = Int((scrollOffset + size.height - textInsetHeight) / lh) + 1
+    private func drawWithLayouts(context: GraphicsContext, size: CGSize) {
+        // Binary search for first visible line
+        let firstIdx = findFirstVisible(scrollOffset: scrollOffset)
 
-        for lineIdx in firstVisible..<min(totalLines, lastVisible + 1) {
-            let lineNum = lineIdx + 1
-            let y = CGFloat(lineIdx) * lh + textInsetHeight - scrollOffset
+        for i in firstIdx..<lineLayouts.count {
+            let layout = lineLayouts[i]
+            let y = layout.yOffset - scrollOffset
 
-            drawLineNumber(lineNum, at: y, lineHeight: lh, context: context)
+            // Past bottom of viewport — done
+            if y > size.height { break }
+
+            // Draw line number centered in the first visual row
+            drawLineNumber(layout.lineNumber, at: y, lineHeight: singleLineHeight, context: context)
         }
     }
 
-    // MARK: - Layout-aware mode (word wrap)
-
-    private func drawWithLayouts(context: GraphicsContext, size: CGSize) {
-        for layout in lineLayouts {
-            let y = layout.yOffset - scrollOffset
-
-            // Skip lines that are off-screen
-            if y + layout.height < 0 { continue }
-            if y > size.height { break }
-
-            // Draw line number centered in the first visual row of the wrapped line
-            drawLineNumber(layout.lineNumber, at: y, lineHeight: lineHeight, context: context)
+    /// Binary search for the first layout whose bottom edge is visible.
+    private func findFirstVisible(scrollOffset: CGFloat) -> Int {
+        var lo = 0
+        var hi = lineLayouts.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            let layout = lineLayouts[mid]
+            if layout.yOffset + layout.height < scrollOffset {
+                lo = mid + 1
+            } else {
+                hi = mid
+            }
         }
+        return lo
     }
 
     // MARK: - Drawing helper
