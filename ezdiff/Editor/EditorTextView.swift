@@ -1,114 +1,58 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Line Number Ruler View
+// MARK: - Line Number Gutter View
 
-class LineNumberRulerView: NSRulerView {
-    private weak var textView: NSTextView?
+class LineNumberGutterView: NSView {
+    weak var scrollView: NSScrollView?
+    private var contentString: String = ""
+    private let gutterWidth: CGFloat = 44
 
-    init(textView: NSTextView, scrollView: NSScrollView) {
-        self.textView = textView
-        super.init(scrollView: scrollView, orientation: .verticalRuler)
-        self.ruleThickness = 44
-        self.clientView = textView
+    private let numAttrs: [NSAttributedString.Key: Any] = [
+        .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
+        .foregroundColor: NSColor.secondaryLabelColor
+    ]
 
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(needsRedisplay),
-            name: NSText.didChangeNotification, object: textView
-        )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(needsRedisplay),
-            name: NSView.boundsDidChangeNotification,
-            object: scrollView.contentView
-        )
-    }
+    override var isFlipped: Bool { true }
 
-    required init(coder: NSCoder) { fatalError() }
-
-    @objc private func needsRedisplay() {
+    func update(text: String) {
+        contentString = text
         needsDisplay = true
     }
 
-    override func drawHashMarksAndLabels(in rect: NSRect) {
-        guard let textView = textView, let scrollView = scrollView else { return }
-
+    override func draw(_ dirtyRect: NSRect) {
         NSColor.controlBackgroundColor.setFill()
-        rect.fill()
+        dirtyRect.fill()
 
+        // Separator line on the right edge
         NSColor.separatorColor.setStroke()
         NSBezierPath.strokeLine(
-            from: NSPoint(x: ruleThickness - 0.5, y: rect.minY),
-            to: NSPoint(x: ruleThickness - 0.5, y: rect.maxY)
+            from: NSPoint(x: bounds.width - 0.5, y: dirtyRect.minY),
+            to: NSPoint(x: bounds.width - 0.5, y: dirtyRect.maxY)
         )
 
-        let text = textView.string
-        guard !text.isEmpty else { return }
+        guard !contentString.isEmpty, let scrollView = scrollView else { return }
 
-        let font = textView.font ?? NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        let lineHeight = ceil(font.ascender - font.descender + font.leading)
+        let textInsetHeight: CGFloat = 4
         let visibleRect = scrollView.contentView.bounds
-        let textInset = textView.textContainerInset
+        let totalLines = contentString.components(separatedBy: "\n").count
+        let firstVisible = max(0, Int((visibleRect.origin.y - textInsetHeight) / lineHeight))
+        let lastVisible = Int((visibleRect.origin.y + visibleRect.height - textInsetHeight) / lineHeight) + 1
 
-        let numAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
-            .foregroundColor: NSColor.secondaryLabelColor
-        ]
-
-        if let layoutManager = textView.layoutManager, let container = textView.textContainer {
-            let nsString = text as NSString
-            let visibleGlyphRange = layoutManager.glyphRange(forBoundingRect: visibleRect, in: container)
-            let visibleCharRange = layoutManager.characterRange(
-                forGlyphRange: visibleGlyphRange, actualGlyphRange: nil
+        for lineIdx in firstVisible..<min(totalLines, lastVisible + 1) {
+            let lineNum = lineIdx + 1
+            let y = CGFloat(lineIdx) * lineHeight + textInsetHeight - visibleRect.origin.y
+            let numStr = "\(lineNum)" as NSString
+            let strSize = numStr.size(withAttributes: numAttrs)
+            numStr.draw(
+                at: NSPoint(
+                    x: gutterWidth - strSize.width - 8,
+                    y: y + (lineHeight - strSize.height) / 2
+                ),
+                withAttributes: numAttrs
             )
-
-            var lineNumber = 1
-            if visibleCharRange.location > 0 {
-                lineNumber = nsString.substring(to: visibleCharRange.location)
-                    .components(separatedBy: "\n").count
-            }
-
-            var index = visibleCharRange.location
-            while index < min(NSMaxRange(visibleCharRange), nsString.length) {
-                let lineRange = nsString.lineRange(for: NSRange(location: index, length: 0))
-                let glyphRange = layoutManager.glyphRange(
-                    forCharacterRange: lineRange, actualCharacterRange: nil
-                )
-                var lineRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: container)
-                lineRect.origin.y += textInset.height - visibleRect.origin.y
-
-                let numStr = "\(lineNumber)" as NSString
-                let strSize = numStr.size(withAttributes: numAttrs)
-                numStr.draw(
-                    at: NSPoint(
-                        x: ruleThickness - strSize.width - 8,
-                        y: lineRect.origin.y + (lineRect.height - strSize.height) / 2
-                    ),
-                    withAttributes: numAttrs
-                )
-
-                lineNumber += 1
-                let next = NSMaxRange(lineRange)
-                if next <= index { break }
-                index = next
-            }
-        } else {
-            let lineHeight = ceil(font.ascender - font.descender + font.leading)
-            let totalLines = text.components(separatedBy: "\n").count
-            let firstVisible = max(0, Int((visibleRect.origin.y - textInset.height) / lineHeight))
-            let lastVisible = Int((visibleRect.origin.y + visibleRect.height - textInset.height) / lineHeight) + 1
-
-            for lineIdx in firstVisible..<min(totalLines, lastVisible + 1) {
-                let lineNum = lineIdx + 1
-                let y = CGFloat(lineIdx) * lineHeight + textInset.height - visibleRect.origin.y
-                let numStr = "\(lineNum)" as NSString
-                let strSize = numStr.size(withAttributes: numAttrs)
-                numStr.draw(
-                    at: NSPoint(
-                        x: ruleThickness - strSize.width - 8,
-                        y: y + (lineHeight - strSize.height) / 2
-                    ),
-                    withAttributes: numAttrs
-                )
-            }
         }
     }
 }
@@ -125,7 +69,9 @@ struct EditorTextView: NSViewRepresentable {
 
     class Coordinator: NSObject, NSTextViewDelegate {
         var textView: NSTextView?
-        var rulerView: LineNumberRulerView?
+        var gutterView: LineNumberGutterView?
+        var scrollObserver: NSObjectProtocol?
+        var textChangeObserver: NSObjectProtocol?
         weak var file: DiffFile?
         var onFocus: (() -> Void)?
         var isUpdatingFromExternal = false
@@ -139,6 +85,7 @@ struct EditorTextView: NSViewRepresentable {
 
             let newContent = textView.string
             lastKnownContent = newContent
+            gutterView?.update(text: newContent)
             if newContent != file.content {
                 file.content = newContent
                 file.markEdited()
@@ -148,13 +95,22 @@ struct EditorTextView: NSViewRepresentable {
         func textDidBeginEditing(_ notification: Notification) {
             onFocus?()
         }
+
+        deinit {
+            if let obs = scrollObserver { NotificationCenter.default.removeObserver(obs) }
+            if let obs = textChangeObserver { NotificationCenter.default.removeObserver(obs) }
+        }
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
 
-    func makeNSView(context: Context) -> NSScrollView {
+    func makeNSView(context: Context) -> NSView {
+        let container = NSView()
+        container.wantsLayer = true
+
+        // Text scroll view
         let scrollView = NSTextView.scrollableTextView()
         let textView = scrollView.documentView as! NSTextView
 
@@ -162,6 +118,16 @@ struct EditorTextView: NSViewRepresentable {
         textView.textColor = .textColor
         textView.isEditable = true
         textView.isSelectable = true
+        textView.textContainerInset = NSSize(width: 4, height: 4)
+        textView.backgroundColor = .textBackgroundColor
+        textView.allowsUndo = true
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
+        textView.isAutomaticLinkDetectionEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextCompletionEnabled = false
+        textView.usesFontPanel = false
         textView.delegate = context.coordinator
 
         // No-wrap configuration
@@ -177,23 +143,53 @@ struct EditorTextView: NSViewRepresentable {
         )
         scrollView.hasHorizontalScroller = true
 
-        // Line number ruler
-        let ruler = LineNumberRulerView(textView: textView, scrollView: scrollView)
-        scrollView.hasVerticalRuler = true
-        scrollView.verticalRulerView = ruler
-        scrollView.rulersVisible = true
+        // Line number gutter (separate view, NOT an NSRulerView)
+        let gutterWidth: CGFloat = 44
+        let gutter = LineNumberGutterView()
+        gutter.scrollView = scrollView
 
+        // Layout: gutter on left, scroll view fills remaining space
+        container.addSubview(gutter)
+        container.addSubview(scrollView)
+        gutter.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            gutter.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            gutter.topAnchor.constraint(equalTo: container.topAnchor),
+            gutter.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            gutter.widthAnchor.constraint(equalToConstant: gutterWidth),
+            scrollView.leadingAnchor.constraint(equalTo: gutter.trailingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: container.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
+
+        // Observe scroll to redraw gutter
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        let scrollObs = NotificationCenter.default.addObserver(
+            forName: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView,
+            queue: .main
+        ) { [weak gutter] _ in
+            gutter?.needsDisplay = true
+        }
+
+        // Store references
         context.coordinator.textView = textView
-        context.coordinator.rulerView = ruler
+        context.coordinator.gutterView = gutter
+        context.coordinator.scrollObserver = scrollObs
         context.coordinator.file = file
+        context.coordinator.onFocus = onFocus
         context.coordinator.lastKnownContent = file.content
 
+        // Set initial content
         textView.string = file.content
+        gutter.update(text: file.content)
 
-        return scrollView
+        return container
     }
 
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+    func updateNSView(_ nsView: NSView, context: Context) {
         guard let textView = context.coordinator.textView else { return }
         let coordinator = context.coordinator
 
@@ -204,9 +200,8 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.isUpdatingFromExternal = true
             textView.string = file.content
             coordinator.lastKnownContent = file.content
+            coordinator.gutterView?.update(text: file.content)
             coordinator.isUpdatingFromExternal = false
         }
-
-        coordinator.rulerView?.needsDisplay = true
     }
 }

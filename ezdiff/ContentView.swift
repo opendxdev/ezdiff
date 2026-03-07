@@ -27,6 +27,8 @@ struct ContentView: View {
                     leftLanguage: leftFile.detectedLanguage,
                     rightLanguage: rightFile.detectedLanguage
                 )
+            } else {
+                EmptyView()
             }
 
             SideBySideView(

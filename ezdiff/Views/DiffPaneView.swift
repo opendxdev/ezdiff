@@ -28,6 +28,7 @@ struct DiffPaneView: View {
                     syncCoordinator: syncCoordinator,
                     onFocus: onFocus
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
