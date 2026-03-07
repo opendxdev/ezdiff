@@ -7,6 +7,8 @@ struct DiffPaneView: View {
     let onClear: () -> Void
     let onFocus: (() -> Void)?
 
+    @State private var scrollOffset: CGFloat = 0
+
     var body: some View {
         VStack(spacing: 0) {
             if file.isEmpty {
@@ -16,11 +18,20 @@ struct DiffPaneView: View {
                 )
             } else {
                 headerBar
-                EditorTextView(
-                    file: file,
-                    onFocus: onFocus
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        LineNumberGutterView(
+                            text: file.content,
+                            scrollOffset: scrollOffset,
+                            viewportHeight: geo.size.height
+                        )
+                        EditorTextView(
+                            file: file,
+                            onFocus: onFocus,
+                            onScrollChange: { scrollOffset = $0 }
+                        )
+                    }
+                }
             }
         }
     }
