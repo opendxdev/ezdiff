@@ -78,13 +78,13 @@ enum TextViewConfigurator {
     /// Uses NSString.boundingRect to calculate how many visual rows each logical line occupies.
     /// When wordWrapEnabled is false, uses infinite width so each line is single-height
     /// but still produces accurate Y offsets matching the text view.
-    static func computeLineLayouts(text: String, containerWidth: CGFloat, font: NSFont, textInset: CGFloat, wordWrapEnabled: Bool) -> [LineLayout] {
+    static func computeLineLayouts(text: String, containerWidth: CGFloat, font: NSFont, horizontalInset: CGFloat, verticalInset: CGFloat, wordWrapEnabled: Bool) -> [LineLayout] {
         guard !text.isEmpty, containerWidth > 0 else { return [] }
 
         let attrs: [NSAttributedString.Key: Any] = [.font: font]
         let nsText = text as NSString
         let wrapWidth = wordWrapEnabled
-            ? max(containerWidth - textInset * 2, 50)
+            ? max(containerWidth - horizontalInset * 2, 50)
             : CGFloat.greatestFiniteMagnitude
         let constraintSize = CGSize(width: wrapWidth, height: .greatestFiniteMagnitude)
         let singleLineHeight = ceil(font.ascender - font.descender + font.leading)
@@ -92,7 +92,7 @@ enum TextViewConfigurator {
         var layouts: [LineLayout] = []
         var lineStart = 0
         var lineNumber = 1
-        var yOffset: CGFloat = textInset // start after top inset
+        var yOffset: CGFloat = verticalInset // start after top inset (uses height, not width)
 
         while lineStart <= nsText.length {
             let lineRange: NSRange

@@ -12,7 +12,7 @@ struct EditorTextView: NSViewRepresentable {
     let side: PaneSide
     let wordWrapEnabled: Bool
     let onFocus: (() -> Void)?
-    let onScrollChange: ((CGFloat) -> Void)?
+    let gutterView: GutterNSView?
     let onLineLayoutChange: (([LineLayout]) -> Void)?
     let onScrollViewReady: ((NSScrollView) -> Void)?
 
@@ -29,11 +29,10 @@ struct EditorTextView: NSViewRepresentable {
         let coordinator = context.coordinator
         coordinator.file = file
         coordinator.onFocus = onFocus
-        coordinator.onScrollChange = onScrollChange
+        coordinator.gutterView = gutterView
         coordinator.onLineLayoutChange = onLineLayoutChange
 
-        // Observe scroll position changes (for line number gutter)
-        // Uses throttled callback to cap SwiftUI state updates at 60fps
+        // Observe scroll position — updates gutter directly (no SwiftUI state)
         scrollView.contentView.postsBoundsChangedNotifications = true
         let scrollObs = NotificationCenter.default.addObserver(
             forName: NSView.boundsDidChangeNotification,
@@ -41,7 +40,7 @@ struct EditorTextView: NSViewRepresentable {
             queue: .main
         ) { [weak coordinator] notification in
             guard let clipView = notification.object as? NSClipView else { return }
-            coordinator?.throttledScrollUpdate(clipView.bounds.origin.y)
+            coordinator?.gutterView?.scrollOffset = clipView.bounds.origin.y
         }
         coordinator.scrollObserver = scrollObs
 
@@ -53,16 +52,19 @@ struct EditorTextView: NSViewRepresentable {
 
         // Compute initial line layouts after TextKit 2 performs first layout
         let wrapEnabled = wordWrapEnabled
-        let textInset = textView.textContainerInset.width
+        let hInset = textView.textContainerInset.width
+        let vInset = textView.textContainerInset.height
         DispatchQueue.main.async {
             let layouts = TextViewConfigurator.computeLineLayouts(
                 text: textView.string,
                 containerWidth: scrollView.contentSize.width,
                 font: TextViewConfigurator.editorFont,
-                textInset: textInset,
+                horizontalInset: hInset,
+                verticalInset: vInset,
                 wordWrapEnabled: wrapEnabled
             )
             coordinator.onLineLayoutChange?(layouts)
+            coordinator.gutterView?.lineLayouts = layouts
             coordinator.lastLayoutText = textView.string
             coordinator.lastLayoutContainerWidth = scrollView.contentSize.width
         }
@@ -76,7 +78,7 @@ struct EditorTextView: NSViewRepresentable {
 
         coordinator.file = file
         coordinator.onFocus = onFocus
-        coordinator.onScrollChange = onScrollChange
+        coordinator.gutterView = gutterView
         coordinator.onLineLayoutChange = onLineLayoutChange
 
         if file.content != textView.string {
@@ -84,7 +86,7 @@ struct EditorTextView: NSViewRepresentable {
             textView.string = file.content
             coordinator.isUpdatingFromExternal = false
             coordinator.lastHighlightState = HighlightState()
-            coordinator.lastLayoutText = "" // invalidate layout cache
+            coordinator.lastLayoutText = ""
         }
 
         // Apply word wrap setting
@@ -116,17 +118,20 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.lastLayoutText = currentText
             coordinator.lastLayoutContainerWidth = currentWidth
 
-            let textInset = textView.textContainerInset.width
+            let hInset = textView.textContainerInset.width
+            let vInset = textView.textContainerInset.height
             let wrapEnabled = wordWrapEnabled
             DispatchQueue.main.async {
                 let layouts = TextViewConfigurator.computeLineLayouts(
                     text: currentText,
                     containerWidth: currentWidth,
                     font: TextViewConfigurator.editorFont,
-                    textInset: textInset,
+                    horizontalInset: hInset,
+                    verticalInset: vInset,
                     wordWrapEnabled: wrapEnabled
                 )
                 coordinator.onLineLayoutChange?(layouts)
+                coordinator.gutterView?.lineLayouts = layouts
             }
         }
     }

@@ -13,8 +13,8 @@ struct DiffPaneView: View {
     let onFocus: (() -> Void)?
     let onScrollViewReady: ((NSScrollView) -> Void)?
 
-    @State private var scrollOffset: CGFloat = 0
     @State private var lineLayouts: [LineLayout] = []
+    @State private var gutterView: GutterNSView?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,12 +27,12 @@ struct DiffPaneView: View {
                 headerBar
                 GeometryReader { geo in
                     HStack(spacing: 0) {
-                        LineNumberGutterView(
-                            text: file.content,
-                            scrollOffset: scrollOffset,
-                            viewportHeight: geo.size.height,
-                            lineLayouts: lineLayouts
+                        GutterRepresentable(
+                            hasContent: !file.isEmpty,
+                            lineLayouts: lineLayouts,
+                            onGutterReady: { gutterView = $0 }
                         )
+                        .frame(width: GutterNSView.gutterWidth)
                         EditorTextView(
                             file: file,
                             tokens: tokens,
@@ -40,7 +40,7 @@ struct DiffPaneView: View {
                             side: side,
                             wordWrapEnabled: wordWrapEnabled,
                             onFocus: onFocus,
-                            onScrollChange: { scrollOffset = $0 },
+                            gutterView: gutterView,
                             onLineLayoutChange: { lineLayouts = $0 },
                             onScrollViewReady: onScrollViewReady
                         )
