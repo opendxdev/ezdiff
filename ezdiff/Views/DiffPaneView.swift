@@ -2,10 +2,6 @@ import SwiftUI
 
 struct DiffPaneView: View {
     @ObservedObject var file: DiffFile
-    let diffLines: [DiffLine]
-    let tokens: [HighlightToken]
-    let side: PaneSide
-    let syncCoordinator: SyncScrollCoordinator
     let onFileDrop: (URL) -> Void
     let onRecentPairSelected: ((RecentPair) -> Void)?
     let onClear: () -> Void
@@ -22,10 +18,6 @@ struct DiffPaneView: View {
                 headerBar
                 EditorTextView(
                     file: file,
-                    diffLines: diffLines,
-                    tokens: tokens,
-                    side: side,
-                    syncCoordinator: syncCoordinator,
                     onFocus: onFocus
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

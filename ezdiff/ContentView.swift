@@ -5,9 +5,6 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var leftFile = DiffFile()
     @StateObject private var rightFile = DiffFile()
-    @StateObject private var leftHighlighter = AsyncHighlightPipeline()
-    @StateObject private var rightHighlighter = AsyncHighlightPipeline()
-    @StateObject private var syncCoordinator = SyncScrollCoordinator()
 
     @State private var diffResult = DiffResult.empty
     @State private var displayMode: DisplayMode = .sideBySide
@@ -21,23 +18,9 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !leftFile.isEmpty && !rightFile.isEmpty {
-                StatsBarView(
-                    stats: diffResult.stats,
-                    leftLanguage: leftFile.detectedLanguage,
-                    rightLanguage: rightFile.detectedLanguage
-                )
-            } else {
-                EmptyView()
-            }
-
             SideBySideView(
                 leftFile: leftFile,
                 rightFile: rightFile,
-                diffResult: diffResult,
-                leftTokens: leftHighlighter.tokens,
-                rightTokens: rightHighlighter.tokens,
-                syncCoordinator: syncCoordinator,
                 onLeftFileDrop: { loadFile($0, into: leftFile) },
                 onRightFileDrop: { loadFile($0, into: rightFile) },
                 onRecentPairSelected: loadRecentPair,
@@ -58,11 +41,9 @@ struct ContentView: View {
             )
         }
         .onChange(of: leftFile.content) { _, _ in
-            updateLeftHighlighting()
             recomputeDiffDebounced()
         }
         .onChange(of: rightFile.content) { _, _ in
-            updateRightHighlighting()
             recomputeDiffDebounced()
         }
         .onChange(of: ignoreWhitespace) { _, _ in
@@ -153,7 +134,6 @@ struct ContentView: View {
 
         do {
             if file.url == nil {
-                // No URL — show save panel
                 let panel = NSSavePanel()
                 panel.nameFieldStringValue = file.filename.isEmpty ? "untitled.txt" : file.filename
                 panel.allowedContentTypes = [.plainText]
@@ -166,18 +146,6 @@ struct ContentView: View {
             saveErrorMessage = error.localizedDescription
             showSaveError = true
         }
-    }
-
-    // MARK: - Highlighting
-
-    private func updateLeftHighlighting() {
-        guard !leftFile.isEmpty else { return }
-        leftHighlighter.update(source: leftFile.content, language: leftFile.detectedLanguage)
-    }
-
-    private func updateRightHighlighting() {
-        guard !rightFile.isEmpty else { return }
-        rightHighlighter.update(source: rightFile.content, language: rightFile.detectedLanguage)
     }
 
     // MARK: - Diff Computation
