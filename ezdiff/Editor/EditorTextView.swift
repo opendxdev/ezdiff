@@ -203,5 +203,12 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.gutterView?.update(text: file.content)
             coordinator.isUpdatingFromExternal = false
         }
+
+        // Force TextKit 2 to re-lay out text after SwiftUI-driven frame changes
+        if let tlm = textView.textLayoutManager {
+            tlm.textViewportLayoutController.layoutViewport()
+        }
+        textView.needsDisplay = true
+        coordinator.gutterView?.needsDisplay = true
     }
 }
