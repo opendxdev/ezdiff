@@ -8,6 +8,7 @@ struct ContentView: View {
     @StateObject private var leftHighlighter = AsyncHighlightPipeline()
     @StateObject private var rightHighlighter = AsyncHighlightPipeline()
     @StateObject private var scrollCoordinator = SyncScrollCoordinator()
+    @StateObject private var rowHeightCoordinator = RowHeightCoordinator()
 
     @State private var diffResult = DiffResult.empty
     @State private var displayMode: DisplayMode = .sideBySide
@@ -37,13 +38,13 @@ struct ContentView: View {
                 rightTokens: rightHighlighter.tokens,
                 diffResult: diffResult,
                 scrollCoordinator: scrollCoordinator,
+                rowHeightCoordinator: rowHeightCoordinator,
                 wordWrapEnabled: wordWrapEnabled,
                 onLeftFileDrop: { loadFile($0, into: leftFile) },
                 onRightFileDrop: { loadFile($0, into: rightFile) },
                 onRecentPairSelected: loadRecentPair,
                 onClearLeft: { clearFile(leftFile) },
-                onClearRight: { clearFile(rightFile) },
-                onFocusChanged: { focusedSide = $0 }
+                onClearRight: { clearFile(rightFile) }
             )
         }
         .toolbar {

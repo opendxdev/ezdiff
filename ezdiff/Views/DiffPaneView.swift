@@ -3,18 +3,16 @@ import AppKit
 
 struct DiffPaneView: View {
     @ObservedObject var file: DiffFile
-    let tokens: [HighlightToken]
-    let diffLines: [DiffLine]
+    let rows: [any DiffRowData]
+    let rowHeights: [CGFloat]
+    let perLineTokens: [[LineHighlightToken]]
     let side: PaneSide
     let wordWrapEnabled: Bool
+    let generation: Int
     let onFileDrop: (URL) -> Void
     let onRecentPairSelected: ((RecentPair) -> Void)?
     let onClear: () -> Void
-    let onFocus: (() -> Void)?
     let onScrollViewReady: ((NSScrollView) -> Void)?
-
-    @State private var lineLayouts: [LineLayout] = []
-    @State private var gutterView: GutterNSView?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,27 +23,16 @@ struct DiffPaneView: View {
                 )
             } else {
                 headerBar
-                GeometryReader { geo in
-                    HStack(spacing: 0) {
-                        GutterRepresentable(
-                            hasContent: !file.isEmpty,
-                            lineLayouts: lineLayouts,
-                            onGutterReady: { gutterView = $0 }
-                        )
-                        .frame(width: GutterNSView.gutterWidth)
-                        EditorTextView(
-                            file: file,
-                            tokens: tokens,
-                            diffLines: diffLines,
-                            side: side,
-                            wordWrapEnabled: wordWrapEnabled,
-                            onFocus: onFocus,
-                            gutterView: gutterView,
-                            onLineLayoutChange: { lineLayouts = $0 },
-                            onScrollViewReady: onScrollViewReady
-                        )
-                    }
-                }
+                DiffTableRepresentable(
+                    rows: rows,
+                    rowHeights: rowHeights,
+                    perLineTokens: perLineTokens,
+                    side: side,
+                    wordWrapEnabled: wordWrapEnabled,
+                    generation: generation,
+                    onScrollViewReady: onScrollViewReady,
+                    onRowAction: nil
+                )
             }
         }
     }
