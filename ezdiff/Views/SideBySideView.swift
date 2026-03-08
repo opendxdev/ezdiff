@@ -108,7 +108,9 @@ struct SideBySideView: View {
             leftTokenCount: leftTokens.count,
             rightTokenCount: rightTokens.count,
             wordWrap: wordWrapEnabled,
-            paneWidth: Int(paneWidth)
+            paneWidth: Int(paneWidth),
+            leftContentHash: leftFile.content.hashValue,
+            rightContentHash: rightFile.content.hashValue
         )) {
             triggerRecompute()
         }
@@ -137,4 +139,6 @@ private struct DiffDataKey: Equatable {
     let rightTokenCount: Int
     let wordWrap: Bool
     let paneWidth: Int
+    let leftContentHash: Int
+    let rightContentHash: Int
 }

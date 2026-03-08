@@ -23,9 +23,7 @@ struct ContentView: View {
     @State private var showSaveError = false
     @State private var saveErrorMessage = ""
     @State private var currentHunkIndex = 0
-    @Environment(\.undoManager) private var undoManager
-    @State private var canUndo = false
-    @State private var canRedo = false
+    @StateObject private var editHistory = EditHistoryManager()
 
     private var displayMode: DisplayMode {
         get { DisplayMode(rawValue: displayModeRaw) ?? .sideBySide }
@@ -77,14 +75,11 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: .toggleIgnoreWhitespace)) { _ in
                 ignoreWhitespace.toggle()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange)) { _ in
-                updateUndoState()
+            .onReceive(NotificationCenter.default.publisher(for: .undoEdit)) { _ in
+                performUndo()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidRedoChange)) { _ in
-                updateUndoState()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidCloseUndoGroup)) { _ in
-                updateUndoState()
+            .onReceive(NotificationCenter.default.publisher(for: .redoEdit)) { _ in
+                performRedo()
             }
     }
 
@@ -149,10 +144,10 @@ struct ContentView: View {
             wordWrapEnabled: $wordWrapEnabled,
             onCopyDiff: copyDiff,
             onExportDiff: exportDiff,
-            onUndo: { undoManager?.undo() },
-            onRedo: { undoManager?.redo() },
-            canUndo: canUndo,
-            canRedo: canRedo
+            onUndo: performUndo,
+            onRedo: performRedo,
+            canUndo: editHistory.canUndo,
+            canRedo: editHistory.canRedo
         )
     }
 
@@ -301,13 +296,6 @@ struct ContentView: View {
         scrollCoordinator.scrollToRow(targetRow, rowHeights: rowHeightCoordinator.rowHeights)
     }
 
-    // MARK: - Undo State
-
-    private func updateUndoState() {
-        canUndo = undoManager?.canUndo ?? false
-        canRedo = undoManager?.canRedo ?? false
-    }
-
     // MARK: - Line Editing
 
     private func updateLine(in file: DiffFile, lineNumber: Int, newText: String) {
@@ -325,19 +313,32 @@ struct ContentView: View {
             try? file.save()
         }
 
-        undoManager?.registerUndo(withTarget: file) { targetFile in
-            // Re-apply oldText to undo; this will register a redo with newText
-            var undoLines = targetFile.content.components(separatedBy: "\n")
-            let undoIndex = lineNumber - 1
-            guard undoIndex >= 0 && undoIndex < undoLines.count else { return }
-            undoLines[undoIndex] = oldText
-            targetFile.content = undoLines.joined(separator: "\n")
-            targetFile.markEdited()
-            if targetFile.url != nil {
-                try? targetFile.save()
-            }
+        editHistory.recordEdit(file: file, lineNumber: lineNumber, oldText: oldText, newText: newText)
+    }
+
+    // MARK: - Undo / Redo
+
+    private func performUndo() {
+        guard let edit = editHistory.undo() else { return }
+        applyEdit(file: edit.file, lineNumber: edit.lineNumber, text: edit.oldText)
+    }
+
+    private func performRedo() {
+        guard let edit = editHistory.redo() else { return }
+        applyEdit(file: edit.file, lineNumber: edit.lineNumber, text: edit.newText)
+    }
+
+    private func applyEdit(file: DiffFile, lineNumber: Int, text: String) {
+        var lines = file.content.components(separatedBy: "\n")
+        let index = lineNumber - 1
+        guard index >= 0 && index < lines.count else { return }
+        lines[index] = text
+        file.content = lines.joined(separator: "\n")
+        file.markEdited()
+
+        if file.url != nil {
+            try? file.save()
         }
-        undoManager?.setActionName("Edit Line \(lineNumber)")
     }
 
     // MARK: - Actions

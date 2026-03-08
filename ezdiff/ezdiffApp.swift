@@ -10,6 +10,8 @@ extension Notification.Name {
     static let copyDiff = Notification.Name("dev.opendx.ezdiff.copyDiff")
     static let exportDiff = Notification.Name("dev.opendx.ezdiff.exportDiff")
     static let toggleIgnoreWhitespace = Notification.Name("dev.opendx.ezdiff.toggleIgnoreWhitespace")
+    static let undoEdit = Notification.Name("dev.opendx.ezdiff.undoEdit")
+    static let redoEdit = Notification.Name("dev.opendx.ezdiff.redoEdit")
 }
 
 @main
@@ -25,6 +27,18 @@ struct ezdiffApp: App {
                     NotificationCenter.default.post(name: .saveFile, object: nil)
                 }
                 .keyboardShortcut("s", modifiers: .command)
+            }
+
+            CommandGroup(replacing: .undoRedo) {
+                Button("Undo") {
+                    NotificationCenter.default.post(name: .undoEdit, object: nil)
+                }
+                .keyboardShortcut("z", modifiers: .command)
+
+                Button("Redo") {
+                    NotificationCenter.default.post(name: .redoEdit, object: nil)
+                }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
             }
 
             CommandGroup(replacing: .newItem) {
