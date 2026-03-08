@@ -43,7 +43,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
         // Text field
         textField_.isEditable = false
-        textField_.isSelectable = true
+        textField_.isSelectable = false
         textField_.isBordered = false
         textField_.drawsBackground = false
         textField_.lineBreakMode = .byClipping
@@ -125,6 +125,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         guard !isEditing else { return }
         isEditing = true
 
+        textField_.isSelectable = true
         textField_.isEditable = true
         textField_.lineBreakMode = .byWordWrapping
         textField_.cell?.truncatesLastVisibleLine = false
@@ -134,6 +135,11 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         textField_.font = AppearanceManager.shared.codeFont
         textField_.textColor = .textColor
         textField_.stringValue = plainText
+
+        // Visual edit indicator
+        gutterLabel.textColor = .controlAccentColor
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.06).cgColor
 
         doneButton.isHidden = false
 
@@ -146,11 +152,14 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         isEditing = false
 
         let newText = textField_.stringValue
+        textField_.isSelectable = false
         textField_.isEditable = false
         textField_.lineBreakMode = .byClipping
         textField_.cell?.truncatesLastVisibleLine = true
         textField_.isBordered = false
         textField_.drawsBackground = false
+
+        gutterLabel.textColor = .secondaryLabelColor
 
         doneButton.isHidden = true
 
@@ -171,11 +180,13 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
             // Escape — cancel without committing
             isEditing = false
+            textField_.isSelectable = false
             textField_.isEditable = false
             textField_.lineBreakMode = .byClipping
             textField_.cell?.truncatesLastVisibleLine = true
             textField_.isBordered = false
             textField_.drawsBackground = false
+            gutterLabel.textColor = .secondaryLabelColor
             doneButton.isHidden = true
             return true
         }
@@ -186,11 +197,13 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         super.prepareForReuse()
         if isEditing {
             isEditing = false
+            textField_.isSelectable = false
             textField_.isEditable = false
             textField_.lineBreakMode = .byClipping
             textField_.cell?.truncatesLastVisibleLine = true
             textField_.isBordered = false
             textField_.drawsBackground = false
+            gutterLabel.textColor = .secondaryLabelColor
             doneButton.isHidden = true
         }
         gutterLabel.stringValue = ""
