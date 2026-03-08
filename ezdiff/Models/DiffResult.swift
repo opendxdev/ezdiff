@@ -13,14 +13,12 @@ enum DiffWordType: Sendable {
     case removed
 }
 
-struct DiffWord: Identifiable, Sendable {
-    let id = UUID()
+struct DiffWord: Sendable {
     let text: String
     let type: DiffWordType
 }
 
-struct DiffLine: Identifiable, Sendable {
-    let id = UUID()
+struct DiffLine: Sendable {
     let text: String
     let type: DiffLineType
     let lineNumberLeft: Int?
@@ -36,8 +34,7 @@ struct DiffLine: Identifiable, Sendable {
     }
 }
 
-struct DiffHunk: Identifiable, Sendable {
-    let id = UUID()
+struct DiffHunk: Sendable {
     let startLineLeft: Int
     let startLineRight: Int
     let lines: [DiffLine]
@@ -62,4 +59,26 @@ struct DiffResult: Sendable {
     let rightLines: [DiffLine]
 
     static let empty = DiffResult(hunks: [], stats: DiffStats(added: 0, removed: 0, modified: 0), leftLines: [], rightLines: [])
+
+    /// Maps each hunk to its first row index in the leftLines/rightLines arrays.
+    var hunkStartRows: [Int] {
+        guard !hunks.isEmpty, !leftLines.isEmpty else { return [] }
+        var result = [Int]()
+        for hunk in hunks {
+            guard let firstChangedLine = hunk.lines.first(where: { $0.type != .unchanged }) else { continue }
+            let targetLineLeft = firstChangedLine.lineNumberLeft
+            let targetLineRight = firstChangedLine.lineNumberRight
+            for (i, line) in leftLines.enumerated() {
+                if let tl = targetLineLeft, line.lineNumberLeft == tl {
+                    result.append(i)
+                    break
+                }
+                if let tr = targetLineRight, line.lineNumberRight == tr {
+                    result.append(i)
+                    break
+                }
+            }
+        }
+        return result
+    }
 }

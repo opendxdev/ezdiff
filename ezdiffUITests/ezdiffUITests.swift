@@ -23,19 +23,20 @@ final class ezdiffUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testAppLaunchesSuccessfully() throws {
         let app = XCUIApplication()
         app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        XCTAssertTrue(app.windows.count > 0, "App should have at least one window")
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testDropZonesVisibleOnLaunch() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let leftDropZone = app.otherElements["leftDropZone"]
+        let rightDropZone = app.otherElements["rightDropZone"]
+        XCTAssertTrue(leftDropZone.waitForExistence(timeout: 5), "Left drop zone should be visible")
+        XCTAssertTrue(rightDropZone.waitForExistence(timeout: 5), "Right drop zone should be visible")
     }
 }

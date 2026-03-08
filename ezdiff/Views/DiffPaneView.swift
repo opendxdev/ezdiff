@@ -21,6 +21,7 @@ struct DiffPaneView: View {
                     onFileDrop: onFileDrop,
                     onRecentPairSelected: onRecentPairSelected
                 )
+                .accessibilityIdentifier(side == .left ? "leftDropZone" : "rightDropZone")
             } else {
                 headerBar
                 DiffTableRepresentable(

@@ -6,6 +6,7 @@ enum DisplayMode: String {
 }
 
 struct ToolbarView: ToolbarContent {
+    @Binding var displayMode: DisplayMode
     @Binding var ignoreWhitespace: Bool
     @Binding var wordWrapEnabled: Bool
     let onCopyDiff: () -> Void
@@ -13,6 +14,18 @@ struct ToolbarView: ToolbarContent {
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                displayMode = displayMode == .sideBySide ? .unified : .sideBySide
+            } label: {
+                Label(
+                    displayMode == .sideBySide ? "Unified" : "Side by Side",
+                    systemImage: displayMode == .sideBySide ? "list.bullet.rectangle" : "rectangle.split.2x1"
+                )
+            }
+            .help("Toggle side-by-side / unified view (⌘D)")
+
+            Divider()
+
             Toggle(isOn: $wordWrapEnabled) {
                 Label("Wrap", systemImage: wordWrapEnabled ? "text.word.spacing" : "arrow.left.and.right.text.vertical")
             }

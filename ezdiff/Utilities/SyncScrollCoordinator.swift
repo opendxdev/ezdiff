@@ -62,6 +62,27 @@ class SyncScrollCoordinator: ObservableObject {
         unregister(side: .right)
     }
 
+    func scrollToRow(_ row: Int, rowHeights: [CGFloat] = []) {
+        guard row >= 0 else { return }
+        var yOffset: CGFloat = 0
+        for i in 0..<min(row, rowHeights.count) {
+            yOffset += rowHeights[i]
+        }
+        let point = NSPoint(x: 0, y: yOffset)
+
+        isUpdating = true
+        defer { isUpdating = false }
+
+        if let left = leftScrollView {
+            left.contentView.scroll(to: point)
+            left.reflectScrolledClipView(left.contentView)
+        }
+        if let right = rightScrollView {
+            right.contentView.scroll(to: point)
+            right.reflectScrolledClipView(right.contentView)
+        }
+    }
+
     private func handleScroll(from side: PaneSide) {
         guard !isUpdating else { return }
         isUpdating = true

@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var focusedSide: PaneSide = .left
     @State private var showSaveError = false
     @State private var saveErrorMessage = ""
+    @State private var currentHunkIndex = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,6 +50,7 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarView(
+                displayMode: $displayMode,
                 ignoreWhitespace: $ignoreWhitespace,
                 wordWrapEnabled: $wordWrapEnabled,
                 onCopyDiff: copyDiff,
@@ -74,6 +76,24 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .saveFile)) { _ in
             saveCurrentFile()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateNextHunk)) { _ in
+            navigateHunk(forward: true)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .navigatePrevHunk)) { _ in
+            navigateHunk(forward: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleDisplayMode)) { _ in
+            displayMode = displayMode == .sideBySide ? .unified : .sideBySide
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .copyDiff)) { _ in
+            copyDiff()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .exportDiff)) { _ in
+            exportDiff()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleIgnoreWhitespace)) { _ in
+            ignoreWhitespace.toggle()
         }
         .alert("Save Error", isPresented: $showSaveError) {
             Button("OK") {}
@@ -199,7 +219,32 @@ struct ContentView: View {
             }.value
 
             self.diffResult = result
+            self.currentHunkIndex = 0
         }
+    }
+
+    // MARK: - Hunk Navigation
+
+    private func navigateHunk(forward: Bool) {
+        let rows = diffResult.hunkStartRows
+        guard !rows.isEmpty else { return }
+
+        if forward {
+            if currentHunkIndex < rows.count - 1 {
+                currentHunkIndex += 1
+            } else {
+                currentHunkIndex = 0
+            }
+        } else {
+            if currentHunkIndex > 0 {
+                currentHunkIndex -= 1
+            } else {
+                currentHunkIndex = rows.count - 1
+            }
+        }
+
+        let targetRow = rows[currentHunkIndex]
+        scrollCoordinator.scrollToRow(targetRow, rowHeights: rowHeightCoordinator.rowHeights)
     }
 
     // MARK: - Actions

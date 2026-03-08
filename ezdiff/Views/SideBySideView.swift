@@ -83,15 +83,9 @@ struct SideBySideView: View {
     }
 
     private func triggerRecompute() {
-        let leftRows: [any DiffRowData] = diffResult.leftLines.map {
-            SideBySideRowData(diffLine: $0, side: .left)
-        }
-        let rightRows: [any DiffRowData] = diffResult.rightLines.map {
-            SideBySideRowData(diffLine: $0, side: .right)
-        }
         rowHeightCoordinator.recompute(
-            leftRows: leftRows,
-            rightRows: rightRows,
+            leftLines: diffResult.leftLines,
+            rightLines: diffResult.rightLines,
             containerWidth: paneWidth,
             wordWrapEnabled: wordWrapEnabled
         )
