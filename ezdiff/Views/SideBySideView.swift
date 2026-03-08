@@ -9,6 +9,7 @@ struct SideBySideView: View {
     @ObservedObject var scrollCoordinator: SyncScrollCoordinator
     @ObservedObject var rowHeightCoordinator: RowHeightCoordinator
     let wordWrapEnabled: Bool
+    let fontSize: CGFloat
     let onLeftFileDrop: (URL) -> Void
     let onRightFileDrop: (URL) -> Void
     let onRecentPairSelected: (RecentPair) -> Void
@@ -111,7 +112,8 @@ struct SideBySideView: View {
             leftTokenCount: leftTokens.count,
             rightTokenCount: rightTokens.count,
             wordWrap: wordWrapEnabled,
-            paneWidth: Int(paneWidth)
+            paneWidth: Int(paneWidth),
+            fontSize: Int(fontSize)
         )) {
             triggerRecompute()
         }
@@ -140,4 +142,5 @@ private struct DiffDataKey: Equatable {
     let rightTokenCount: Int
     let wordWrap: Bool
     let paneWidth: Int
+    let fontSize: Int
 }

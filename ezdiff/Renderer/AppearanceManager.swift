@@ -124,4 +124,10 @@ final class AppearanceManager: ObservableObject {
     // MARK: - Default Text Color
 
     var defaultTextColor: NSColor { .textColor }
+
+    // MARK: - Edit Mode Colors
+
+    var editIndicatorColor: NSColor { .controlAccentColor }
+    var editCellBackground: NSColor { .controlAccentColor.withAlphaComponent(Constants.EditMode.backgroundAlpha) }
+    var editTextFieldBorder: NSColor { .controlAccentColor.withAlphaComponent(0.5) }
 }

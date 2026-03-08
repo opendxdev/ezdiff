@@ -86,7 +86,6 @@ struct ContentView: View {
     @ViewBuilder
     private var bodyWithChangeHandlers: some View {
         mainContent
-            .toolbar { toolbarContent }
             .onChange(of: leftFile.content) { _, _ in
                 updateLeftHighlighting()
                 recomputeDiffDebounced()
@@ -124,6 +123,7 @@ struct ContentView: View {
                 scrollCoordinator: scrollCoordinator,
                 rowHeightCoordinator: rowHeightCoordinator,
                 wordWrapEnabled: wordWrapEnabled,
+                fontSize: CGFloat(fontSize),
                 onLeftFileDrop: { loadFile($0, into: leftFile) },
                 onRightFileDrop: { loadFile($0, into: rightFile) },
                 onRecentPairSelected: loadRecentPair,
@@ -134,21 +134,19 @@ struct ContentView: View {
                     updateLine(in: file, lineNumber: lineNumber, newText: newText)
                 }
             )
-        }
-    }
 
-    private var toolbarContent: some ToolbarContent {
-        ToolbarView(
-            displayMode: displayModeBinding,
-            ignoreWhitespace: $ignoreWhitespace,
-            wordWrapEnabled: $wordWrapEnabled,
-            onCopyDiff: copyDiff,
-            onExportDiff: exportDiff,
-            onUndo: performUndo,
-            onRedo: performRedo,
-            canUndo: editHistory.canUndo,
-            canRedo: editHistory.canRedo
-        )
+            ActionBarView(
+                displayMode: displayModeBinding,
+                ignoreWhitespace: $ignoreWhitespace,
+                wordWrapEnabled: $wordWrapEnabled,
+                onCopyDiff: copyDiff,
+                onExportDiff: exportDiff,
+                onUndo: performUndo,
+                onRedo: performRedo,
+                canUndo: editHistory.canUndo,
+                canRedo: editHistory.canRedo
+            )
+        }
     }
 
     // MARK: - Computed Properties

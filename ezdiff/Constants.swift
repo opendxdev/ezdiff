@@ -107,4 +107,46 @@ enum Constants {
     enum Animation {
         static let scrollDuration: Double = 0.3
     }
+
+    // MARK: - Action Bar
+
+    enum ActionBar {
+        static let horizontalPadding: CGFloat = 12
+        static let buttonSpacing: CGFloat = 2
+        static let buttonCornerRadius: CGFloat = 4
+        static let buttonMinWidth: CGFloat = 44
+        static let iconSize: CGFloat = 12
+        static let dividerHeight: CGFloat = 16
+
+        // Button icon names and labels
+        static let undoIcon = "arrow.uturn.backward"
+        static let undoLabel = "Undo"
+        static let redoIcon = "arrow.uturn.forward"
+        static let redoLabel = "Redo"
+        static let sideBySideIcon = "rectangle.split.2x1"
+        static let sideBySideLabel = "Side by Side"
+        static let unifiedIcon = "list.bullet.rectangle"
+        static let unifiedLabel = "Unified"
+        static let wrapOnIcon = "text.word.spacing"
+        static let wrapOffIcon = "arrow.left.and.right.text.vertical"
+        static let wrapLabel = "Wrap"
+        static let whitespaceOnIcon = "eye.slash"
+        static let whitespaceOffIcon = "eye"
+        static let whitespaceLabel = "Whitespace"
+        static let copyIcon = "doc.on.clipboard"
+        static let copyLabel = "Copy Diff"
+        static let exportIcon = "square.and.arrow.up"
+        static let exportLabel = "Export"
+    }
+
+    // MARK: - Edit Mode
+
+    enum EditMode {
+        static let verticalPadding: CGFloat = 12
+        static let textFieldCornerRadius: CGFloat = 4
+        static let textFieldBorderWidth: CGFloat = 1.5
+        static let indicatorStripWidth: CGFloat = 3
+        static let backgroundAlpha: CGFloat = 0.10
+        static let doneButtonSize: CGFloat = 24
+    }
 }

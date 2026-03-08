@@ -25,6 +25,7 @@ struct DiffPaneView: View {
                 .accessibilityIdentifier(side == .left ? "leftDropZone" : "rightDropZone")
             } else {
                 headerBar
+                Divider()
                 DiffTableRepresentable(
                     rows: rows,
                     rowHeights: rowHeights,

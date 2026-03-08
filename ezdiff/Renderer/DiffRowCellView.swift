@@ -4,6 +4,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
     static let identifier = NSUserInterfaceItemIdentifier("DiffRowCell")
 
+    private let editIndicatorStrip = NSView()
     private let gutterLabel = NSTextField(labelWithString: "")
     private let separator = NSView()
     private let textField_ = NSTextField(labelWithString: "")
@@ -16,6 +17,12 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
     private var suppressEndEditing = false
     private var plainText = ""
 
+    // Constraint references for dynamic edit padding
+    private var gutterTopConstraint: NSLayoutConstraint!
+    private var gutterBottomConstraint: NSLayoutConstraint!
+    private var textTopConstraint: NSLayoutConstraint!
+    private var textBottomConstraint: NSLayoutConstraint!
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setup()
@@ -26,6 +33,13 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
     }
 
     private func setup() {
+        // Edit indicator strip (hidden by default)
+        editIndicatorStrip.wantsLayer = true
+        editIndicatorStrip.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        editIndicatorStrip.isHidden = true
+        editIndicatorStrip.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(editIndicatorStrip)
+
         // Gutter label
         gutterLabel.font = AppearanceManager.shared.gutterFont
         gutterLabel.textColor = .secondaryLabelColor
@@ -67,27 +81,44 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
         let gutterWidth = Constants.Cell.gutterWidth
         let vPad = Constants.Cell.verticalPadding / 2
+        let stripWidth = Constants.EditMode.indicatorStripWidth
+        let doneSize = Constants.EditMode.doneButtonSize
+
+        gutterTopConstraint = gutterLabel.topAnchor.constraint(equalTo: topAnchor, constant: vPad)
+        gutterBottomConstraint = gutterLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad)
+        textTopConstraint = textField_.topAnchor.constraint(equalTo: topAnchor, constant: vPad)
+        textBottomConstraint = textField_.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad)
 
         NSLayoutConstraint.activate([
-            gutterLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
-            gutterLabel.widthAnchor.constraint(equalToConstant: gutterWidth - Constants.Cell.gutterInset),
-            gutterLabel.topAnchor.constraint(equalTo: topAnchor, constant: vPad),
-            gutterLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad),
+            // Edit indicator strip
+            editIndicatorStrip.leadingAnchor.constraint(equalTo: leadingAnchor),
+            editIndicatorStrip.widthAnchor.constraint(equalToConstant: stripWidth),
+            editIndicatorStrip.topAnchor.constraint(equalTo: topAnchor),
+            editIndicatorStrip.bottomAnchor.constraint(equalTo: bottomAnchor),
 
+            // Gutter
+            gutterLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: stripWidth),
+            gutterLabel.widthAnchor.constraint(equalToConstant: gutterWidth - Constants.Cell.gutterInset - stripWidth),
+            gutterTopConstraint,
+            gutterBottomConstraint,
+
+            // Separator
             separator.leadingAnchor.constraint(equalTo: leadingAnchor, constant: gutterWidth),
             separator.widthAnchor.constraint(equalToConstant: Constants.Cell.separatorWidth),
             separator.topAnchor.constraint(equalTo: topAnchor),
             separator.bottomAnchor.constraint(equalTo: bottomAnchor),
 
+            // Text field
             textField_.leadingAnchor.constraint(equalTo: separator.trailingAnchor, constant: Constants.Cell.textLeadingMargin),
             textField_.trailingAnchor.constraint(equalTo: doneButton.leadingAnchor, constant: -4),
-            textField_.topAnchor.constraint(equalTo: topAnchor, constant: vPad),
-            textField_.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad),
+            textTopConstraint,
+            textBottomConstraint,
 
+            // Done button
             doneButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Constants.Cell.textTrailingMargin),
             doneButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            doneButton.widthAnchor.constraint(equalToConstant: 20),
-            doneButton.heightAnchor.constraint(equalToConstant: 20),
+            doneButton.widthAnchor.constraint(equalToConstant: doneSize),
+            doneButton.heightAnchor.constraint(equalToConstant: doneSize),
         ])
     }
 
@@ -128,22 +159,43 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         guard !isEditing else { return }
         isEditing = true
 
+        // Text field edit styling
         textField_.isSelectable = true
         textField_.isEditable = true
         textField_.lineBreakMode = .byWordWrapping
         textField_.cell?.truncatesLastVisibleLine = false
-        textField_.isBordered = true
+        textField_.isBordered = false
         textField_.drawsBackground = true
         textField_.backgroundColor = .textBackgroundColor
         textField_.font = AppearanceManager.shared.codeFont
         textField_.textColor = .textColor
         textField_.stringValue = plainText
 
-        // Visual edit indicator
+        // Rounded border + shadow via layer
+        textField_.wantsLayer = true
+        textField_.layer?.cornerRadius = Constants.EditMode.textFieldCornerRadius
+        textField_.layer?.borderWidth = Constants.EditMode.textFieldBorderWidth
+        textField_.layer?.borderColor = AppearanceManager.shared.editTextFieldBorder.cgColor
+        textField_.layer?.shadowColor = NSColor.controlAccentColor.cgColor
+        textField_.layer?.shadowOpacity = 0.15
+        textField_.layer?.shadowRadius = 2
+        textField_.layer?.shadowOffset = .zero
+        textField_.layer?.masksToBounds = false
+
+        // Visual indicators
+        editIndicatorStrip.isHidden = false
         gutterLabel.textColor = .controlAccentColor
         wantsLayer = true
-        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.06).cgColor
+        layer?.backgroundColor = AppearanceManager.shared.editCellBackground.cgColor
 
+        // Increase padding
+        let editVPad = Constants.EditMode.verticalPadding / 2
+        gutterTopConstraint.constant = editVPad
+        gutterBottomConstraint.constant = -editVPad
+        textTopConstraint.constant = editVPad
+        textBottomConstraint.constant = -editVPad
+
+        doneButton.contentTintColor = .controlAccentColor
         doneButton.isHidden = false
 
         suppressEndEditing = true
@@ -159,18 +211,53 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         isEditing = false
 
         let newText = textField_.stringValue
+
+        // Reset text field styling
         textField_.isSelectable = false
         textField_.isEditable = false
         textField_.lineBreakMode = .byClipping
         textField_.cell?.truncatesLastVisibleLine = true
         textField_.isBordered = false
         textField_.drawsBackground = false
+        textField_.layer?.cornerRadius = 0
+        textField_.layer?.borderWidth = 0
+        textField_.layer?.shadowOpacity = 0
 
+        // Reset visual indicators
+        editIndicatorStrip.isHidden = true
         gutterLabel.textColor = .secondaryLabelColor
-
         doneButton.isHidden = true
 
+        // Restore normal padding
+        let vPad = Constants.Cell.verticalPadding / 2
+        gutterTopConstraint.constant = vPad
+        gutterBottomConstraint.constant = -vPad
+        textTopConstraint.constant = vPad
+        textBottomConstraint.constant = -vPad
+
         onEditCommit?(newText)
+    }
+
+    private func resetEditState() {
+        isEditing = false
+        textField_.isSelectable = false
+        textField_.isEditable = false
+        textField_.lineBreakMode = .byClipping
+        textField_.cell?.truncatesLastVisibleLine = true
+        textField_.isBordered = false
+        textField_.drawsBackground = false
+        textField_.layer?.cornerRadius = 0
+        textField_.layer?.borderWidth = 0
+        textField_.layer?.shadowOpacity = 0
+        editIndicatorStrip.isHidden = true
+        gutterLabel.textColor = .secondaryLabelColor
+        doneButton.isHidden = true
+
+        let vPad = Constants.Cell.verticalPadding / 2
+        gutterTopConstraint.constant = vPad
+        gutterBottomConstraint.constant = -vPad
+        textTopConstraint.constant = vPad
+        textBottomConstraint.constant = -vPad
     }
 
     @objc private func doneButtonClicked() {
@@ -198,15 +285,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         }
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
             // Escape — cancel without committing
-            isEditing = false
-            textField_.isSelectable = false
-            textField_.isEditable = false
-            textField_.lineBreakMode = .byClipping
-            textField_.cell?.truncatesLastVisibleLine = true
-            textField_.isBordered = false
-            textField_.drawsBackground = false
-            gutterLabel.textColor = .secondaryLabelColor
-            doneButton.isHidden = true
+            resetEditState()
             return true
         }
         return false
@@ -215,15 +294,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
     override func prepareForReuse() {
         super.prepareForReuse()
         if isEditing {
-            isEditing = false
-            textField_.isSelectable = false
-            textField_.isEditable = false
-            textField_.lineBreakMode = .byClipping
-            textField_.cell?.truncatesLastVisibleLine = true
-            textField_.isBordered = false
-            textField_.drawsBackground = false
-            gutterLabel.textColor = .secondaryLabelColor
-            doneButton.isHidden = true
+            resetEditState()
         }
         gutterLabel.stringValue = ""
         textField_.attributedStringValue = NSAttributedString()

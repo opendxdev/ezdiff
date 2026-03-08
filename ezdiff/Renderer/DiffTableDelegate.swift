@@ -138,7 +138,7 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
             attributes: [.font: font]
         )
 
-        let calculatedHeight = ceil(boundingRect.height) + Constants.Cell.verticalPadding + 4 // extra for border
+        let calculatedHeight = ceil(boundingRect.height) + Constants.EditMode.verticalPadding + Constants.EditMode.textFieldBorderWidth * 2
         let originalHeight = row < rowHeights.count ? rowHeights[row] : defaultRowHeight
         let newHeight = max(calculatedHeight, originalHeight)
 

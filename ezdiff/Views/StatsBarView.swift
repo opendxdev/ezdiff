@@ -42,5 +42,6 @@ struct StatsBarView: View {
         .padding(.horizontal, Constants.Stats.horizontalPadding)
         .padding(.vertical, Constants.Stats.verticalPadding)
         .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
     }
 }
