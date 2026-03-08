@@ -31,7 +31,7 @@ struct DiffEngine: Sendable {
         }
 
         // Group into hunks
-        let hunks = buildHunks(from: diffLines, contextLines: 3)
+        let hunks = buildHunks(from: diffLines, contextLines: Constants.Capacity.diffContextLines)
 
         // Split into left/right line arrays for side-by-side display
         let (leftDiffLines, rightDiffLines) = splitForSideBySide(diffLines)

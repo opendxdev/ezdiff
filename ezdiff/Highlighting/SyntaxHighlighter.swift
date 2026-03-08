@@ -53,7 +53,7 @@ struct SyntaxHighlighter {
         operator_: NSColor(red: 0.55, green: 0.10, blue: 0.10, alpha: 1.0),
         punctuation: NSColor(red: 0.35, green: 0.35, blue: 0.35, alpha: 1.0),
         latexCommand: NSColor(red: 0.50, green: 0.30, blue: 0.10, alpha: 1.0),
-        latexMathBackground: NSColor.systemOrange.withAlphaComponent(0.08),
+        latexMathBackground: NSColor.systemOrange.withAlphaComponent(Constants.Alpha.latexMathBackgroundLight),
         plain: NSColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
     )
 
@@ -67,7 +67,7 @@ struct SyntaxHighlighter {
         operator_: NSColor(red: 0.90, green: 0.40, blue: 0.40, alpha: 1.0),
         punctuation: NSColor(red: 0.65, green: 0.65, blue: 0.70, alpha: 1.0),
         latexCommand: NSColor(red: 0.85, green: 0.70, blue: 0.40, alpha: 1.0),
-        latexMathBackground: NSColor.systemOrange.withAlphaComponent(0.10),
+        latexMathBackground: NSColor.systemOrange.withAlphaComponent(Constants.Alpha.latexMathBackgroundDark),
         plain: NSColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
     )
 
@@ -112,9 +112,9 @@ struct SyntaxHighlighter {
             textStorage.addAttribute(.foregroundColor, value: color, range: nsRange)
 
             if token.type == .comment {
-                textStorage.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular), range: nsRange)
+                textStorage.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: Constants.Font.defaultCodeSize, weight: .regular), range: nsRange)
             } else if token.type == .keyword {
-                textStorage.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: 13, weight: .bold), range: nsRange)
+                textStorage.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: Constants.Font.defaultCodeSize, weight: .bold), range: nsRange)
             }
 
             if let bgColor = theme.backgroundColor(for: token.type) {

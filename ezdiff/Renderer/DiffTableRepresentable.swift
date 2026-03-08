@@ -25,7 +25,7 @@ struct DiffTableRepresentable: NSViewRepresentable {
         let tableView = NSTableView()
         tableView.headerView = nil
         tableView.usesAutomaticRowHeights = false
-        tableView.intercellSpacing = NSSize(width: 0, height: 0)
+        tableView.intercellSpacing = NSSize(width: 0, height: Constants.Cell.intercellSpacing)
         tableView.gridStyleMask = []
         tableView.selectionHighlightStyle = .none
         tableView.backgroundColor = .clear
@@ -92,7 +92,7 @@ struct DiffTableRepresentable: NSViewRepresentable {
             guard row >= 0 && row < tableView.numberOfRows else { return }
             if animated {
                 NSAnimationContext.runAnimationGroup { ctx in
-                    ctx.duration = 0.3
+                    ctx.duration = Constants.Animation.scrollDuration
                     tableView.scrollRowToVisible(row)
                 }
             } else {

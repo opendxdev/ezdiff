@@ -8,12 +8,17 @@ final class AppearanceManager: ObservableObject {
 
     // MARK: - Fonts
 
-    let codeFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-    let codeBoldFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
-    let gutterFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+    private(set) var codeFont: NSFont
+    private(set) var codeBoldFont: NSFont
+    private(set) var gutterFont: NSFont
+    private(set) var singleLineHeight: CGFloat
 
-    let singleLineHeight: CGFloat
-    static let gutterWidth: CGFloat = 44
+    @Published var codeFontSize: CGFloat = Constants.Font.defaultCodeSize {
+        didSet {
+            guard codeFontSize != oldValue else { return }
+            rebuildFonts()
+        }
+    }
 
     // MARK: - Appearance State
 
@@ -21,8 +26,13 @@ final class AppearanceManager: ObservableObject {
     private var appearanceObserver: NSObjectProtocol?
 
     private init() {
+        let size = Constants.Font.defaultCodeSize
+        let gutterSize = max(size - Constants.Font.gutterSizeOffset, Constants.Font.minGutterSize)
+        codeFont = NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        codeBoldFont = NSFont.monospacedSystemFont(ofSize: size, weight: .bold)
+        gutterFont = NSFont.monospacedSystemFont(ofSize: gutterSize, weight: .regular)
         singleLineHeight = {
-            let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+            let font = NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
             return ceil(font.ascender - font.descender + font.leading)
         }()
         isDark = Self.detectDark()
@@ -41,6 +51,16 @@ final class AppearanceManager: ObservableObject {
         if let obs = appearanceObserver {
             NotificationCenter.default.removeObserver(obs)
         }
+    }
+
+    private func rebuildFonts() {
+        let size = codeFontSize
+        let gutterSize = max(size - Constants.Font.gutterSizeOffset, Constants.Font.minGutterSize)
+        codeFont = NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        codeBoldFont = NSFont.monospacedSystemFont(ofSize: size, weight: .bold)
+        gutterFont = NSFont.monospacedSystemFont(ofSize: gutterSize, weight: .regular)
+        singleLineHeight = ceil(codeFont.ascender - codeFont.descender + codeFont.leading)
+        objectWillChange.send()
     }
 
     func refreshAppearance() {
@@ -65,9 +85,9 @@ final class AppearanceManager: ObservableObject {
     func diffLineBackground(for type: DiffLineType) -> NSColor {
         switch type {
         case .unchanged: return .clear
-        case .added: return NSColor.systemGreen.withAlphaComponent(0.12)
-        case .removed: return NSColor.systemRed.withAlphaComponent(0.12)
-        case .modified: return NSColor.systemOrange.withAlphaComponent(0.10)
+        case .added: return NSColor.systemGreen.withAlphaComponent(Constants.Alpha.addedLineBackground)
+        case .removed: return NSColor.systemRed.withAlphaComponent(Constants.Alpha.removedLineBackground)
+        case .modified: return NSColor.systemOrange.withAlphaComponent(Constants.Alpha.modifiedLineBackground)
         }
     }
 
@@ -76,8 +96,8 @@ final class AppearanceManager: ObservableObject {
     func diffWordBackground(for type: DiffWordType) -> NSColor {
         switch type {
         case .unchanged: return .clear
-        case .added: return NSColor.systemGreen.withAlphaComponent(0.25)
-        case .removed: return NSColor.systemRed.withAlphaComponent(0.25)
+        case .added: return NSColor.systemGreen.withAlphaComponent(Constants.Alpha.addedWordHighlight)
+        case .removed: return NSColor.systemRed.withAlphaComponent(Constants.Alpha.removedWordHighlight)
         }
     }
 
@@ -91,14 +111,14 @@ final class AppearanceManager: ObservableObject {
 
     var placeholderBackground: NSColor {
         isDark
-            ? NSColor.white.withAlphaComponent(0.03)
-            : NSColor.black.withAlphaComponent(0.03)
+            ? NSColor.white.withAlphaComponent(Constants.Alpha.placeholderBackground)
+            : NSColor.black.withAlphaComponent(Constants.Alpha.placeholderBackground)
     }
 
     var placeholderStripeColor: NSColor {
         isDark
-            ? NSColor.white.withAlphaComponent(0.05)
-            : NSColor.black.withAlphaComponent(0.05)
+            ? NSColor.white.withAlphaComponent(Constants.Alpha.placeholderStripe)
+            : NSColor.black.withAlphaComponent(Constants.Alpha.placeholderStripe)
     }
 
     // MARK: - Default Text Color

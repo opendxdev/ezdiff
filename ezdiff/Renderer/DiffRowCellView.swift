@@ -46,23 +46,24 @@ final class DiffRowCellView: NSTableCellView {
         textField_.translatesAutoresizingMaskIntoConstraints = false
         addSubview(textField_)
 
-        let gutterWidth = AppearanceManager.gutterWidth
+        let gutterWidth = Constants.Cell.gutterWidth
+        let vPad = Constants.Cell.verticalPadding / 2
 
         NSLayoutConstraint.activate([
             gutterLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
-            gutterLabel.widthAnchor.constraint(equalToConstant: gutterWidth - 8),
-            gutterLabel.topAnchor.constraint(equalTo: topAnchor),
-            gutterLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
+            gutterLabel.widthAnchor.constraint(equalToConstant: gutterWidth - Constants.Cell.gutterInset),
+            gutterLabel.topAnchor.constraint(equalTo: topAnchor, constant: vPad),
+            gutterLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad),
 
             separator.leadingAnchor.constraint(equalTo: leadingAnchor, constant: gutterWidth),
-            separator.widthAnchor.constraint(equalToConstant: 1),
+            separator.widthAnchor.constraint(equalToConstant: Constants.Cell.separatorWidth),
             separator.topAnchor.constraint(equalTo: topAnchor),
             separator.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            textField_.leadingAnchor.constraint(equalTo: separator.trailingAnchor, constant: 4),
-            textField_.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-            textField_.topAnchor.constraint(equalTo: topAnchor),
-            textField_.bottomAnchor.constraint(equalTo: bottomAnchor),
+            textField_.leadingAnchor.constraint(equalTo: separator.trailingAnchor, constant: Constants.Cell.textLeadingMargin),
+            textField_.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Constants.Cell.textTrailingMargin),
+            textField_.topAnchor.constraint(equalTo: topAnchor, constant: vPad),
+            textField_.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad),
         ])
     }
 

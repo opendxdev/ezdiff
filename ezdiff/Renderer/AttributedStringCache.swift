@@ -9,7 +9,7 @@ final class AttributedStringCache {
     private var count = 0
     private let capacity: Int
 
-    init(capacity: Int = 500) {
+    init(capacity: Int = Constants.Capacity.attributedStringCache) {
         self.capacity = capacity
     }
 

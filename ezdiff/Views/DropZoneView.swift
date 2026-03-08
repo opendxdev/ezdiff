@@ -12,11 +12,11 @@ struct DropZoneView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Constants.DropZone.spacing) {
             Spacer()
 
             Image(systemName: "doc.on.doc")
-                .font(.system(size: 48))
+                .font(.system(size: Constants.DropZone.iconSize))
                 .foregroundStyle(.secondary)
 
             Text("Drop a file here")
@@ -33,11 +33,11 @@ struct DropZoneView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+            RoundedRectangle(cornerRadius: Constants.DropZone.cornerRadius)
+                .strokeBorder(style: StrokeStyle(lineWidth: Constants.DropZone.lineWidth, dash: [Constants.DropZone.dashLength, Constants.DropZone.dashGap]))
                 .foregroundStyle(isTargeted ? Color.accentColor : Color.secondary.opacity(0.5))
         )
-        .padding(16)
+        .padding(Constants.DropZone.padding)
         .contentShape(Rectangle())
         .onTapGesture {
             openFilePanel()

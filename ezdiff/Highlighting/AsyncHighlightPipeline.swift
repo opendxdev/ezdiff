@@ -11,7 +11,7 @@ class AsyncHighlightPipeline: ObservableObject {
 
     init() {
         cancellable = inputSubject
-            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(Constants.Timing.highlightDebounceMs), scheduler: RunLoop.main)
             .sink { [weak self] source, language in
                 self?.runHighlight(source: source, language: language)
             }

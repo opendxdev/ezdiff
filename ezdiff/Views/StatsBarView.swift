@@ -6,7 +6,7 @@ struct StatsBarView: View {
     let rightLanguage: DetectedLanguage?
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: Constants.Stats.hStackSpacing) {
             HStack(spacing: 4) {
                 Text("+\(stats.added)")
                     .foregroundStyle(.green)
@@ -39,8 +39,8 @@ struct StatsBarView: View {
             }
         }
         .font(.system(.caption, design: .default))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
+        .padding(.horizontal, Constants.Stats.horizontalPadding)
+        .padding(.vertical, Constants.Stats.verticalPadding)
         .background(.bar)
     }
 }

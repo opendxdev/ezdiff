@@ -77,5 +77,9 @@ struct ezdiffApp: App {
                 .keyboardShortcut("w", modifiers: [.command, .option])
             }
         }
+
+        Settings {
+            SettingsView()
+        }
     }
 }

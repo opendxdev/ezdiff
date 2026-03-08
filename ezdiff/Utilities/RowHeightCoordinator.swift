@@ -30,7 +30,7 @@ final class RowHeightCoordinator: ObservableObject {
             return
         }
 
-        let textWidth = max(containerWidth - AppearanceManager.gutterWidth - 1 - 8, 50)
+        let textWidth = max(containerWidth - Constants.Cell.gutterWidth - Constants.Cell.separatorWidth - Constants.Cell.textLeadingMargin - Constants.Cell.textTrailingMargin, 50)
         let font = appearance.codeFont
         let constraintSize = CGSize(width: textWidth, height: .greatestFiniteMagnitude)
         let attrs: [NSAttributedString.Key: Any] = [.font: font]

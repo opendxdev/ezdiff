@@ -11,20 +11,33 @@ struct ContentView: View {
     @StateObject private var rowHeightCoordinator = RowHeightCoordinator()
 
     @State private var diffResult = DiffResult.empty
-    @State private var displayMode: DisplayMode = .sideBySide
+    @AppStorage(Constants.SettingsKey.displayMode) private var displayModeRaw = DisplayMode.sideBySide.rawValue
     @State private var showPreview = false
     @State private var vimModeEnabled = false
-    @State private var ignoreWhitespace = false
-    @State private var wordWrapEnabled = false
+    @AppStorage(Constants.SettingsKey.ignoreWhitespace) private var ignoreWhitespace = false
+    @AppStorage(Constants.SettingsKey.wordWrapEnabled) private var wordWrapEnabled = false
+    @AppStorage(Constants.SettingsKey.fontSize) private var fontSize: Double = Double(Constants.Font.defaultCodeSize)
+    @AppStorage(Constants.SettingsKey.showStatsBar) private var showStatsBar = true
     @State private var diffTask: Task<Void, Never>?
     @State private var focusedSide: PaneSide = .left
     @State private var showSaveError = false
     @State private var saveErrorMessage = ""
     @State private var currentHunkIndex = 0
 
+    private var displayMode: DisplayMode {
+        get { DisplayMode(rawValue: displayModeRaw) ?? .sideBySide }
+    }
+
+    private var displayModeBinding: Binding<DisplayMode> {
+        Binding(
+            get: { DisplayMode(rawValue: displayModeRaw) ?? .sideBySide },
+            set: { displayModeRaw = $0.rawValue }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            if !leftFile.isEmpty && !rightFile.isEmpty {
+            if showStatsBar && !leftFile.isEmpty && !rightFile.isEmpty {
                 StatsBarView(
                     stats: diffResult.stats,
                     leftLanguage: leftFile.detectedLanguage,
@@ -50,7 +63,7 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarView(
-                displayMode: $displayMode,
+                displayMode: displayModeBinding,
                 ignoreWhitespace: $ignoreWhitespace,
                 wordWrapEnabled: $wordWrapEnabled,
                 onCopyDiff: copyDiff,
@@ -68,6 +81,9 @@ struct ContentView: View {
         .onChange(of: ignoreWhitespace) { _, _ in
             recomputeDiffDebounced()
         }
+        .onChange(of: fontSize) { _, newSize in
+            AppearanceManager.shared.codeFontSize = CGFloat(newSize)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .openLeftFile)) { _ in
             openFilePanel { url in loadFile(url, into: leftFile) }
         }
@@ -84,7 +100,7 @@ struct ContentView: View {
             navigateHunk(forward: false)
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleDisplayMode)) { _ in
-            displayMode = displayMode == .sideBySide ? .unified : .sideBySide
+            displayModeRaw = displayMode == .sideBySide ? DisplayMode.unified.rawValue : DisplayMode.sideBySide.rawValue
         }
         .onReceive(NotificationCenter.default.publisher(for: .copyDiff)) { _ in
             copyDiff()
@@ -211,7 +227,7 @@ struct ContentView: View {
         let ignoreWS = ignoreWhitespace
 
         diffTask = Task {
-            try? await Task.sleep(for: .milliseconds(150))
+            try? await Task.sleep(for: .milliseconds(Constants.Timing.diffDebounceMs))
             guard !Task.isCancelled else { return }
 
             let result = await Task.detached {

@@ -39,13 +39,13 @@ struct DiffPaneView: View {
     }
 
     private var headerBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Constants.Header.hStackSpacing) {
             Text(file.detectedLanguage.displayName)
                 .font(.caption2)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
+                .padding(.horizontal, Constants.Header.badgeHPadding)
+                .padding(.vertical, Constants.Header.badgeVPadding)
                 .background(.quaternary)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .clipShape(RoundedRectangle(cornerRadius: Constants.Header.badgeCornerRadius))
 
             Text(file.filename)
                 .font(.system(.body, design: .monospaced))
@@ -74,8 +74,8 @@ struct DiffPaneView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Constants.Header.horizontalPadding)
+        .padding(.vertical, Constants.Header.verticalPadding)
         .background(.bar)
     }
 }
