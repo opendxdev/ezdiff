@@ -13,6 +13,7 @@ struct DiffPaneView: View {
     let onRecentPairSelected: ((RecentPair) -> Void)?
     let onClear: () -> Void
     let onScrollViewReady: ((NSScrollView) -> Void)?
+    let onLineEdit: ((Int, String) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,7 +33,8 @@ struct DiffPaneView: View {
                     wordWrapEnabled: wordWrapEnabled,
                     generation: generation,
                     onScrollViewReady: onScrollViewReady,
-                    onRowAction: nil
+                    onRowAction: nil,
+                    onLineEdit: onLineEdit
                 )
             }
         }

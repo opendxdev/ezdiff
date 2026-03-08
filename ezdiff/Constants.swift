@@ -9,8 +9,8 @@ enum Constants {
         static let gutterInset: CGFloat = 8
         static let textLeadingMargin: CGFloat = 8
         static let textTrailingMargin: CGFloat = 8
-        static let verticalPadding: CGFloat = 4
-        static let intercellSpacing: CGFloat = 1
+        static let verticalPadding: CGFloat = 6
+        static let intercellSpacing: CGFloat = 2
         static let separatorWidth: CGFloat = 1
     }
 
@@ -48,7 +48,7 @@ enum Constants {
     // MARK: - Fonts
 
     enum Font {
-        static let defaultCodeSize: CGFloat = 13
+        static let defaultCodeSize: CGFloat = 14
         static let minCodeSize: CGFloat = 10
         static let maxCodeSize: CGFloat = 24
         static let gutterSizeOffset: CGFloat = 2
@@ -93,6 +93,13 @@ enum Constants {
         static let displayMode = "displayMode"
         static let fontSize = "fontSize"
         static let showStatsBar = "showStatsBar"
+    }
+
+    // MARK: - Pane Divider
+
+    enum PaneDivider {
+        static let width: CGFloat = 6
+        static let minPaneRatio: CGFloat = 0.2
     }
 
     // MARK: - Animation

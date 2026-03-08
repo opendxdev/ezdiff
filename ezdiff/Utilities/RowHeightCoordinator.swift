@@ -16,7 +16,7 @@ final class RowHeightCoordinator: ObservableObject {
         wordWrapEnabled: Bool
     ) {
         let count = max(leftLines.count, rightLines.count)
-        let singleHeight = appearance.singleLineHeight
+        let singleHeight = appearance.singleLineHeight + Constants.Cell.verticalPadding
 
         guard count > 0 else {
             rowHeights = []

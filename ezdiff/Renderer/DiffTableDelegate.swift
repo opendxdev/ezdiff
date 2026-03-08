@@ -13,11 +13,14 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
     var appearance: AppearanceManager = .shared
     var attributedStringCache = AttributedStringCache()
     var onRowAction: ((RowAction) -> Void)?
+    var onLineEdit: ((Int, String) -> Void)?
 
     private let defaultRowHeight: CGFloat
+    private weak var editingCell: DiffRowCellView?
+    private var editingRow: Int?
 
     override init() {
-        defaultRowHeight = AppearanceManager.shared.singleLineHeight
+        defaultRowHeight = AppearanceManager.shared.singleLineHeight + Constants.Cell.verticalPadding
         super.init()
     }
 
@@ -57,6 +60,15 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
 
         cell.configure(row: rowData, attributedText: attrString, appearance: appearance)
 
+        // Wire edit commit callback
+        cell.onEditCommit = { [weak self] newText in
+            guard let self,
+                  let lineNumber = rowData.lineNumber else { return }
+            self.editingCell = nil
+            self.editingRow = nil
+            self.onLineEdit?(lineNumber, newText)
+        }
+
         return cell
     }
 
@@ -67,5 +79,20 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
 
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
         false
+    }
+
+    // MARK: - Edit Activation
+
+    func activateEdit(at row: Int, in tableView: NSTableView) {
+        // Exit any existing edit
+        editingCell?.exitEditMode()
+
+        guard row < rows.count, rows[row].lineNumber != nil, !rows[row].isPlaceholder else { return }
+
+        guard let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? DiffRowCellView else { return }
+
+        editingCell = cell
+        editingRow = row
+        cell.enterEditMode()
     }
 }

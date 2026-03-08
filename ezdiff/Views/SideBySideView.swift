@@ -14,7 +14,9 @@ struct SideBySideView: View {
     let onRecentPairSelected: (RecentPair) -> Void
     let onClearLeft: () -> Void
     let onClearRight: () -> Void
+    let onLineEdit: ((PaneSide, Int, String) -> Void)?
 
+    @State private var dividerRatio: CGFloat = 0.5
     @State private var paneWidth: CGFloat = 600
 
     var body: some View {
@@ -32,6 +34,12 @@ struct SideBySideView: View {
         let gen = rowHeightCoordinator.generation
 
         GeometryReader { geo in
+            let totalWidth = geo.size.width
+            let dividerWidth = Constants.PaneDivider.width
+            let availableWidth = totalWidth - dividerWidth
+            let leftWidth = availableWidth * dividerRatio
+            let rightWidth = availableWidth * (1 - dividerRatio)
+
             HStack(spacing: 0) {
                 DiffPaneView(
                     file: leftFile,
@@ -44,10 +52,26 @@ struct SideBySideView: View {
                     onFileDrop: onLeftFileDrop,
                     onRecentPairSelected: onRecentPairSelected,
                     onClear: onClearLeft,
-                    onScrollViewReady: { scrollCoordinator.register(scrollView: $0, side: .left) }
+                    onScrollViewReady: { scrollCoordinator.register(scrollView: $0, side: .left) },
+                    onLineEdit: { lineNum, newText in
+                        onLineEdit?(.left, lineNum, newText)
+                    }
                 )
+                .frame(width: leftWidth)
 
-                Divider()
+                DraggableDivider()
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                let newRatio = value.location.x / availableWidth
+                                dividerRatio = min(max(newRatio, Constants.PaneDivider.minPaneRatio), 1 - Constants.PaneDivider.minPaneRatio)
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            dividerRatio = 0.5
+                        }
+                    }
 
                 DiffPaneView(
                     file: rightFile,
@@ -60,14 +84,21 @@ struct SideBySideView: View {
                     onFileDrop: onRightFileDrop,
                     onRecentPairSelected: onRecentPairSelected,
                     onClear: onClearRight,
-                    onScrollViewReady: { scrollCoordinator.register(scrollView: $0, side: .right) }
+                    onScrollViewReady: { scrollCoordinator.register(scrollView: $0, side: .right) },
+                    onLineEdit: { lineNum, newText in
+                        onLineEdit?(.right, lineNum, newText)
+                    }
                 )
+                .frame(width: rightWidth)
             }
-            .onChange(of: geo.size.width) { _, newWidth in
-                paneWidth = newWidth / 2
+            .onChange(of: geo.size.width) { _, _ in
+                updatePaneWidth(totalWidth: totalWidth, dividerWidth: dividerWidth)
+            }
+            .onChange(of: dividerRatio) { _, _ in
+                updatePaneWidth(totalWidth: totalWidth, dividerWidth: dividerWidth)
             }
             .onAppear {
-                paneWidth = geo.size.width / 2
+                updatePaneWidth(totalWidth: totalWidth, dividerWidth: dividerWidth)
             }
         }
         .task(id: DiffDataKey(
@@ -80,6 +111,12 @@ struct SideBySideView: View {
         )) {
             triggerRecompute()
         }
+    }
+
+    private func updatePaneWidth(totalWidth: CGFloat, dividerWidth: CGFloat) {
+        let availableWidth = totalWidth - dividerWidth
+        // Use the narrower pane for height calculation (ensures text fits in both)
+        paneWidth = availableWidth * min(dividerRatio, 1 - dividerRatio)
     }
 
     private func triggerRecompute() {

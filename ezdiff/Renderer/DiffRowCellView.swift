@@ -1,12 +1,17 @@
 import AppKit
 
-final class DiffRowCellView: NSTableCellView {
+final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
     static let identifier = NSUserInterfaceItemIdentifier("DiffRowCell")
 
     private let gutterLabel = NSTextField(labelWithString: "")
     private let separator = NSView()
     private let textField_ = NSTextField(labelWithString: "")
+    private let doneButton = NSButton()
+
+    var onEditCommit: ((String) -> Void)?
+    private var isEditing = false
+    private var plainText = ""
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -44,7 +49,18 @@ final class DiffRowCellView: NSTableCellView {
         textField_.lineBreakMode = .byClipping
         textField_.cell?.truncatesLastVisibleLine = true
         textField_.translatesAutoresizingMaskIntoConstraints = false
+        textField_.delegate = self
         addSubview(textField_)
+
+        // Done button (hidden by default)
+        doneButton.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "Done")
+        doneButton.bezelStyle = .inline
+        doneButton.isBordered = false
+        doneButton.isHidden = true
+        doneButton.target = self
+        doneButton.action = #selector(doneButtonClicked)
+        doneButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(doneButton)
 
         let gutterWidth = Constants.Cell.gutterWidth
         let vPad = Constants.Cell.verticalPadding / 2
@@ -61,9 +77,14 @@ final class DiffRowCellView: NSTableCellView {
             separator.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             textField_.leadingAnchor.constraint(equalTo: separator.trailingAnchor, constant: Constants.Cell.textLeadingMargin),
-            textField_.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Constants.Cell.textTrailingMargin),
+            textField_.trailingAnchor.constraint(equalTo: doneButton.leadingAnchor, constant: -4),
             textField_.topAnchor.constraint(equalTo: topAnchor, constant: vPad),
             textField_.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -vPad),
+
+            doneButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Constants.Cell.textTrailingMargin),
+            doneButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            doneButton.widthAnchor.constraint(equalToConstant: 20),
+            doneButton.heightAnchor.constraint(equalToConstant: 20),
         ])
     }
 
@@ -80,8 +101,13 @@ final class DiffRowCellView: NSTableCellView {
             gutterLabel.stringValue = ""
         }
 
+        // Store plain text for editing
+        plainText = row.text
+
         // Text
-        textField_.attributedStringValue = attributedText
+        if !isEditing {
+            textField_.attributedStringValue = attributedText
+        }
 
         // Background
         wantsLayer = true
@@ -93,10 +119,84 @@ final class DiffRowCellView: NSTableCellView {
         }
     }
 
+    // MARK: - Inline Editing
+
+    func enterEditMode() {
+        guard !isEditing else { return }
+        isEditing = true
+
+        textField_.isEditable = true
+        textField_.lineBreakMode = .byWordWrapping
+        textField_.cell?.truncatesLastVisibleLine = false
+        textField_.isBordered = true
+        textField_.drawsBackground = true
+        textField_.backgroundColor = .textBackgroundColor
+        textField_.font = AppearanceManager.shared.codeFont
+        textField_.textColor = .textColor
+        textField_.stringValue = plainText
+
+        doneButton.isHidden = false
+
+        textField_.becomeFirstResponder()
+        textField_.selectText(nil)
+    }
+
+    func exitEditMode() {
+        guard isEditing else { return }
+        isEditing = false
+
+        let newText = textField_.stringValue
+        textField_.isEditable = false
+        textField_.lineBreakMode = .byClipping
+        textField_.cell?.truncatesLastVisibleLine = true
+        textField_.isBordered = false
+        textField_.drawsBackground = false
+
+        doneButton.isHidden = true
+
+        onEditCommit?(newText)
+    }
+
+    @objc private func doneButtonClicked() {
+        exitEditMode()
+    }
+
+    // MARK: - NSTextFieldDelegate
+
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            exitEditMode()
+            return true
+        }
+        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            // Escape — cancel without committing
+            isEditing = false
+            textField_.isEditable = false
+            textField_.lineBreakMode = .byClipping
+            textField_.cell?.truncatesLastVisibleLine = true
+            textField_.isBordered = false
+            textField_.drawsBackground = false
+            doneButton.isHidden = true
+            return true
+        }
+        return false
+    }
+
     override func prepareForReuse() {
         super.prepareForReuse()
+        if isEditing {
+            isEditing = false
+            textField_.isEditable = false
+            textField_.lineBreakMode = .byClipping
+            textField_.cell?.truncatesLastVisibleLine = true
+            textField_.isBordered = false
+            textField_.drawsBackground = false
+            doneButton.isHidden = true
+        }
         gutterLabel.stringValue = ""
         textField_.attributedStringValue = NSAttributedString()
         layer?.backgroundColor = nil
+        onEditCommit = nil
+        plainText = ""
     }
 }

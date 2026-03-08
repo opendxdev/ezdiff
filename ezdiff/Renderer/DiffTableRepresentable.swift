@@ -10,6 +10,7 @@ struct DiffTableRepresentable: NSViewRepresentable {
     let generation: Int
     let onScrollViewReady: ((NSScrollView) -> Void)?
     let onRowAction: ((RowAction) -> Void)?
+    let onLineEdit: ((Int, String) -> Void)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -30,6 +31,7 @@ struct DiffTableRepresentable: NSViewRepresentable {
         tableView.selectionHighlightStyle = .none
         tableView.backgroundColor = .clear
         tableView.style = .plain
+        tableView.doubleAction = #selector(Coordinator.tableViewDoubleClicked(_:))
 
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("content"))
         column.resizingMask = .autoresizingMask
@@ -40,9 +42,11 @@ struct DiffTableRepresentable: NSViewRepresentable {
         delegate.rowHeights = rowHeights
         delegate.perLineTokens = perLineTokens
         delegate.onRowAction = onRowAction
+        delegate.onLineEdit = onLineEdit
 
         tableView.dataSource = delegate
         tableView.delegate = delegate
+        tableView.target = context.coordinator
 
         context.coordinator.delegate = delegate
         context.coordinator.tableView = tableView
@@ -72,6 +76,7 @@ struct DiffTableRepresentable: NSViewRepresentable {
         delegate.rowHeights = rowHeights
         delegate.perLineTokens = perLineTokens
         delegate.onRowAction = onRowAction
+        delegate.onLineEdit = onLineEdit
 
         if dataChanged {
             delegate.attributedStringCache.invalidateAll()
@@ -82,7 +87,7 @@ struct DiffTableRepresentable: NSViewRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator {
+    class Coordinator: NSObject {
         var delegate: DiffTableDelegate?
         var tableView: NSTableView?
         var lastGeneration: Int = -1
@@ -98,6 +103,12 @@ struct DiffTableRepresentable: NSViewRepresentable {
             } else {
                 tableView.scrollRowToVisible(row)
             }
+        }
+
+        @objc func tableViewDoubleClicked(_ sender: NSTableView) {
+            let clickedRow = sender.clickedRow
+            guard clickedRow >= 0 else { return }
+            delegate?.activateEdit(at: clickedRow, in: sender)
         }
     }
 }

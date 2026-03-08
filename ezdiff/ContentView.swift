@@ -58,7 +58,11 @@ struct ContentView: View {
                 onRightFileDrop: { loadFile($0, into: rightFile) },
                 onRecentPairSelected: loadRecentPair,
                 onClearLeft: { clearFile(leftFile) },
-                onClearRight: { clearFile(rightFile) }
+                onClearRight: { clearFile(rightFile) },
+                onLineEdit: { side, lineNumber, newText in
+                    let file = side == .left ? leftFile : rightFile
+                    updateLine(in: file, lineNumber: lineNumber, newText: newText)
+                }
             )
         }
         .toolbar {
@@ -261,6 +265,17 @@ struct ContentView: View {
 
         let targetRow = rows[currentHunkIndex]
         scrollCoordinator.scrollToRow(targetRow, rowHeights: rowHeightCoordinator.rowHeights)
+    }
+
+    // MARK: - Line Editing
+
+    private func updateLine(in file: DiffFile, lineNumber: Int, newText: String) {
+        var lines = file.content.components(separatedBy: "\n")
+        let index = lineNumber - 1
+        guard index >= 0 && index < lines.count else { return }
+        lines[index] = newText
+        file.content = lines.joined(separator: "\n")
+        file.markEdited()
     }
 
     // MARK: - Actions
