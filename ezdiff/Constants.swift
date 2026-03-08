@@ -139,6 +139,18 @@ enum Constants {
         static let exportLabel = "Export"
     }
 
+    // MARK: - Unified Cell Layout
+
+    enum UnifiedCell {
+        static let gutterWidth: CGFloat = 40
+        static let prefixWidth: CGFloat = 16
+        static let separatorWidth: CGFloat = 1
+        static let textLeadingMargin: CGFloat = 6
+        static let textTrailingMargin: CGFloat = 8
+        static let verticalPadding: CGFloat = 4
+        static let intercellSpacing: CGFloat = 0
+    }
+
     // MARK: - Edit Mode
 
     enum EditMode {

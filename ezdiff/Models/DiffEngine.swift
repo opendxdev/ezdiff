@@ -40,7 +40,8 @@ struct DiffEngine: Sendable {
             hunks: hunks,
             stats: DiffStats(added: added, removed: removed, modified: modified),
             leftLines: leftDiffLines,
-            rightLines: rightDiffLines
+            rightLines: rightDiffLines,
+            unifiedLines: diffLines
         )
     }
 

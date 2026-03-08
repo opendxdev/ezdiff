@@ -43,12 +43,28 @@ struct DiffPaneView: View {
 
     private var headerBar: some View {
         HStack(spacing: Constants.Header.hStackSpacing) {
-            Text(file.detectedLanguage.displayName)
-                .font(.caption2)
-                .padding(.horizontal, Constants.Header.badgeHPadding)
-                .padding(.vertical, Constants.Header.badgeVPadding)
-                .background(.quaternary)
-                .clipShape(RoundedRectangle(cornerRadius: Constants.Header.badgeCornerRadius))
+            Menu {
+                ForEach(DetectedLanguage.allCases) { lang in
+                    Button {
+                        file.detectedLanguage = lang
+                    } label: {
+                        if lang == file.detectedLanguage {
+                            Label(lang.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(lang.displayName)
+                        }
+                    }
+                }
+            } label: {
+                Text(file.detectedLanguage.displayName)
+                    .font(.caption2)
+                    .padding(.horizontal, Constants.Header.badgeHPadding)
+                    .padding(.vertical, Constants.Header.badgeVPadding)
+                    .background(.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: Constants.Header.badgeCornerRadius))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
 
             Text(file.filename)
                 .font(.system(.body, design: .monospaced))

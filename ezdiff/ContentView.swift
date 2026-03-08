@@ -81,6 +81,11 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: .redoEdit)) { _ in
                 performRedo()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .loadRecentPair)) { notification in
+                if let pair = notification.object as? RecentPair {
+                    loadRecentPair(pair)
+                }
+            }
     }
 
     @ViewBuilder
@@ -96,6 +101,12 @@ struct ContentView: View {
             }
             .onChange(of: ignoreWhitespace) { _, _ in
                 recomputeDiffDebounced()
+            }
+            .onChange(of: leftFile.detectedLanguage) { _, _ in
+                updateLeftHighlighting()
+            }
+            .onChange(of: rightFile.detectedLanguage) { _, _ in
+                updateRightHighlighting()
             }
             .onChange(of: fontSize) { _, newSize in
                 AppearanceManager.shared.codeFontSize = CGFloat(newSize)
@@ -114,26 +125,41 @@ struct ContentView: View {
                 )
             }
 
-            SideBySideView(
-                leftFile: leftFile,
-                rightFile: rightFile,
-                leftTokens: leftHighlighter.tokens,
-                rightTokens: rightHighlighter.tokens,
-                diffResult: diffResult,
-                scrollCoordinator: scrollCoordinator,
-                rowHeightCoordinator: rowHeightCoordinator,
-                wordWrapEnabled: wordWrapEnabled,
-                fontSize: CGFloat(fontSize),
-                onLeftFileDrop: { loadFile($0, into: leftFile) },
-                onRightFileDrop: { loadFile($0, into: rightFile) },
-                onRecentPairSelected: loadRecentPair,
-                onClearLeft: { clearFile(leftFile) },
-                onClearRight: { clearFile(rightFile) },
-                onLineEdit: { side, lineNumber, newText in
-                    let file = side == .left ? leftFile : rightFile
-                    updateLine(in: file, lineNumber: lineNumber, newText: newText)
-                }
-            )
+            if displayMode == .sideBySide {
+                SideBySideView(
+                    leftFile: leftFile,
+                    rightFile: rightFile,
+                    leftTokens: leftHighlighter.tokens,
+                    rightTokens: rightHighlighter.tokens,
+                    diffResult: diffResult,
+                    scrollCoordinator: scrollCoordinator,
+                    rowHeightCoordinator: rowHeightCoordinator,
+                    wordWrapEnabled: wordWrapEnabled,
+                    fontSize: CGFloat(fontSize),
+                    onLeftFileDrop: { loadFile($0, into: leftFile) },
+                    onRightFileDrop: { loadFile($0, into: rightFile) },
+                    onRecentPairSelected: loadRecentPair,
+                    onClearLeft: { clearFile(leftFile) },
+                    onClearRight: { clearFile(rightFile) },
+                    onLineEdit: { side, lineNumber, newText in
+                        let file = side == .left ? leftFile : rightFile
+                        updateLine(in: file, lineNumber: lineNumber, newText: newText)
+                    }
+                )
+            } else {
+                UnifiedDiffView(
+                    leftFile: leftFile,
+                    rightFile: rightFile,
+                    leftTokens: leftHighlighter.tokens,
+                    rightTokens: rightHighlighter.tokens,
+                    diffResult: diffResult,
+                    wordWrapEnabled: wordWrapEnabled,
+                    fontSize: CGFloat(fontSize),
+                    onLeftFileDrop: { loadFile($0, into: leftFile) },
+                    onRightFileDrop: { loadFile($0, into: rightFile) },
+                    onRecentPairSelected: loadRecentPair
+                )
+            }
 
             ActionBarView(
                 displayMode: displayModeBinding,

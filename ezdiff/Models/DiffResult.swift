@@ -57,8 +57,9 @@ struct DiffResult: Sendable, Equatable {
     let stats: DiffStats
     let leftLines: [DiffLine]
     let rightLines: [DiffLine]
+    let unifiedLines: [DiffLine]
 
-    static let empty = DiffResult(hunks: [], stats: DiffStats(added: 0, removed: 0, modified: 0), leftLines: [], rightLines: [])
+    static let empty = DiffResult(hunks: [], stats: DiffStats(added: 0, removed: 0, modified: 0), leftLines: [], rightLines: [], unifiedLines: [])
 
     /// Maps each hunk to its first row index in the leftLines/rightLines arrays.
     var hunkStartRows: [Int] {

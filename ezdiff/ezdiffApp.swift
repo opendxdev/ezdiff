@@ -12,6 +12,7 @@ extension Notification.Name {
     static let toggleIgnoreWhitespace = Notification.Name("dev.opendx.ezdiff.toggleIgnoreWhitespace")
     static let undoEdit = Notification.Name("dev.opendx.ezdiff.undoEdit")
     static let redoEdit = Notification.Name("dev.opendx.ezdiff.redoEdit")
+    static let loadRecentPair = Notification.Name("dev.opendx.ezdiff.loadRecentPair")
 }
 
 @main
@@ -51,6 +52,25 @@ struct ezdiffApp: App {
                     NotificationCenter.default.post(name: .openRightFile, object: nil)
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
+
+                Divider()
+
+                Menu("Recent Comparisons") {
+                    let pairs = RecentPairs.pairs
+                    if pairs.isEmpty {
+                        Text("No Recent Comparisons")
+                    } else {
+                        ForEach(pairs) { pair in
+                            Button("\(pair.leftFilename) ↔ \(pair.rightFilename)") {
+                                NotificationCenter.default.post(name: .loadRecentPair, object: pair)
+                            }
+                        }
+                        Divider()
+                        Button("Clear Recent") {
+                            RecentPairs.clear()
+                        }
+                    }
+                }
             }
 
             CommandGroup(after: .toolbar) {
