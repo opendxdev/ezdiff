@@ -1,24 +1,24 @@
 import Foundation
 
-enum DiffLineType: Sendable {
+enum DiffLineType: Sendable, Equatable {
     case unchanged
     case added
     case removed
     case modified
 }
 
-enum DiffWordType: Sendable {
+enum DiffWordType: Sendable, Equatable {
     case unchanged
     case added
     case removed
 }
 
-struct DiffWord: Sendable {
+struct DiffWord: Sendable, Equatable {
     let text: String
     let type: DiffWordType
 }
 
-struct DiffLine: Sendable {
+struct DiffLine: Sendable, Equatable {
     let text: String
     let type: DiffLineType
     let lineNumberLeft: Int?
@@ -34,7 +34,7 @@ struct DiffLine: Sendable {
     }
 }
 
-struct DiffHunk: Sendable {
+struct DiffHunk: Sendable, Equatable {
     let startLineLeft: Int
     let startLineRight: Int
     let lines: [DiffLine]
@@ -46,13 +46,13 @@ struct DiffHunk: Sendable {
     }
 }
 
-struct DiffStats: Sendable {
+struct DiffStats: Sendable, Equatable {
     let added: Int
     let removed: Int
     let modified: Int
 }
 
-struct DiffResult: Sendable {
+struct DiffResult: Sendable, Equatable {
     let hunks: [DiffHunk]
     let stats: DiffStats
     let leftLines: [DiffLine]

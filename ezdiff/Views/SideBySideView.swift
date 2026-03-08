@@ -91,6 +91,9 @@ struct SideBySideView: View {
                 )
                 .frame(width: rightWidth)
             }
+            .onChange(of: diffResult) { _, _ in
+                triggerRecompute()
+            }
             .onChange(of: geo.size.width) { _, _ in
                 updatePaneWidth(totalWidth: totalWidth, dividerWidth: dividerWidth)
             }
@@ -108,9 +111,7 @@ struct SideBySideView: View {
             leftTokenCount: leftTokens.count,
             rightTokenCount: rightTokens.count,
             wordWrap: wordWrapEnabled,
-            paneWidth: Int(paneWidth),
-            leftContentHash: leftFile.content.hashValue,
-            rightContentHash: rightFile.content.hashValue
+            paneWidth: Int(paneWidth)
         )) {
             triggerRecompute()
         }
@@ -139,6 +140,4 @@ private struct DiffDataKey: Equatable {
     let rightTokenCount: Int
     let wordWrap: Bool
     let paneWidth: Int
-    let leftContentHash: Int
-    let rightContentHash: Int
 }

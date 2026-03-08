@@ -310,7 +310,12 @@ struct ContentView: View {
         file.markEdited()
 
         if file.url != nil {
-            try? file.save()
+            do {
+                try file.save()
+            } catch {
+                saveErrorMessage = "Failed to save: \(error.localizedDescription)"
+                showSaveError = true
+            }
         }
 
         editHistory.recordEdit(file: file, lineNumber: lineNumber, oldText: oldText, newText: newText)
@@ -337,7 +342,12 @@ struct ContentView: View {
         file.markEdited()
 
         if file.url != nil {
-            try? file.save()
+            do {
+                try file.save()
+            } catch {
+                saveErrorMessage = "Failed to save: \(error.localizedDescription)"
+                showSaveError = true
+            }
         }
     }
 
