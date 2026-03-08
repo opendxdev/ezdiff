@@ -18,6 +18,8 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
     private let defaultRowHeight: CGFloat
     private weak var editingCell: DiffRowCellView?
     private var editingRow: Int?
+    private var editingRowHeight: CGFloat?
+    private weak var tableView_: NSTableView?
 
     override init() {
         defaultRowHeight = AppearanceManager.shared.singleLineHeight + Constants.Cell.verticalPadding
@@ -64,8 +66,13 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
         cell.onEditCommit = { [weak self] newText in
             guard let self,
                   let lineNumber = rowData.lineNumber else { return }
+            let prevRow = self.editingRow
             self.editingCell = nil
             self.editingRow = nil
+            self.editingRowHeight = nil
+            if let prevRow, let tv = self.tableView_ {
+                tv.noteHeightOfRows(withIndexesChanged: IndexSet(integer: prevRow))
+            }
             self.onLineEdit?(lineNumber, newText)
         }
 
@@ -73,6 +80,9 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
     }
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+        if row == editingRow, let height = editingRowHeight {
+            return height
+        }
         guard row < rowHeights.count else { return defaultRowHeight }
         return rowHeights[row]
     }
@@ -91,8 +101,53 @@ final class DiffTableDelegate: NSObject, NSTableViewDataSource, NSTableViewDeleg
 
         guard let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? DiffRowCellView else { return }
 
+        tableView_ = tableView
         editingCell = cell
         editingRow = row
+
+        cell.onTextChanged = { [weak self] in
+            self?.updateEditingRowHeight()
+        }
+
         cell.enterEditMode()
+        updateEditingRowHeight()
+    }
+
+    private func updateEditingRowHeight() {
+        guard let cell = editingCell,
+              let row = editingRow,
+              let tableView = tableView_ else { return }
+
+        let text = cell.currentText
+        let font = AppearanceManager.shared.codeFont
+
+        // Calculate available text width: cell width minus gutter, separator, margins, done button
+        let cellWidth = cell.frame.width
+        let textWidth = cellWidth
+            - Constants.Cell.gutterWidth
+            - Constants.Cell.separatorWidth
+            - Constants.Cell.textLeadingMargin
+            - 24  // done button (20) + gap (4)
+            - Constants.Cell.textTrailingMargin
+
+        guard textWidth > 0 else { return }
+
+        let boundingRect = (text as NSString).boundingRect(
+            with: NSSize(width: textWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font]
+        )
+
+        let calculatedHeight = ceil(boundingRect.height) + Constants.Cell.verticalPadding + 4 // extra for border
+        let originalHeight = row < rowHeights.count ? rowHeights[row] : defaultRowHeight
+        let newHeight = max(calculatedHeight, originalHeight)
+
+        if editingRowHeight != newHeight {
+            editingRowHeight = newHeight
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0.1
+            tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integer: row))
+            NSAnimationContext.endGrouping()
+        }
     }
 }

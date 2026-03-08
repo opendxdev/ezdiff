@@ -10,6 +10,8 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
     private let doneButton = NSButton()
 
     var onEditCommit: ((String) -> Void)?
+    var onTextChanged: (() -> Void)?
+    var currentText: String { textField_.stringValue }
     private var isEditing = false
     private var plainText = ""
 
@@ -172,6 +174,18 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
     // MARK: - NSTextFieldDelegate
 
+    func controlTextDidEndEditing(_ obj: Notification) {
+        if isEditing {
+            exitEditMode()
+        }
+    }
+
+    func controlTextDidChange(_ obj: Notification) {
+        if isEditing {
+            onTextChanged?()
+        }
+    }
+
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if commandSelector == #selector(NSResponder.insertNewline(_:)) {
             exitEditMode()
@@ -210,6 +224,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         textField_.attributedStringValue = NSAttributedString()
         layer?.backgroundColor = nil
         onEditCommit = nil
+        onTextChanged = nil
         plainText = ""
     }
 }

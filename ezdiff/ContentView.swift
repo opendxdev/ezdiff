@@ -23,6 +23,9 @@ struct ContentView: View {
     @State private var showSaveError = false
     @State private var saveErrorMessage = ""
     @State private var currentHunkIndex = 0
+    @Environment(\.undoManager) private var undoManager
+    @State private var canUndo = false
+    @State private var canRedo = false
 
     private var displayMode: DisplayMode {
         get { DisplayMode(rawValue: displayModeRaw) ?? .sideBySide }
@@ -36,6 +39,78 @@ struct ContentView: View {
     }
 
     var body: some View {
+        bodyWithObservers
+            .alert("Save Error", isPresented: $showSaveError) {
+                Button("OK") {}
+            } message: {
+                Text(saveErrorMessage)
+            }
+    }
+
+    @ViewBuilder
+    private var bodyWithObservers: some View {
+        bodyWithChangeHandlers
+            .onReceive(NotificationCenter.default.publisher(for: .openLeftFile)) { _ in
+                openFilePanel { url in loadFile(url, into: leftFile) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openRightFile)) { _ in
+                openFilePanel { url in loadFile(url, into: rightFile) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .saveFile)) { _ in
+                saveCurrentFile()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateNextHunk)) { _ in
+                navigateHunk(forward: true)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigatePrevHunk)) { _ in
+                navigateHunk(forward: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleDisplayMode)) { _ in
+                displayModeRaw = displayMode == .sideBySide ? DisplayMode.unified.rawValue : DisplayMode.sideBySide.rawValue
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .copyDiff)) { _ in
+                copyDiff()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .exportDiff)) { _ in
+                exportDiff()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleIgnoreWhitespace)) { _ in
+                ignoreWhitespace.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange)) { _ in
+                updateUndoState()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidRedoChange)) { _ in
+                updateUndoState()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidCloseUndoGroup)) { _ in
+                updateUndoState()
+            }
+    }
+
+    @ViewBuilder
+    private var bodyWithChangeHandlers: some View {
+        mainContent
+            .toolbar { toolbarContent }
+            .onChange(of: leftFile.content) { _, _ in
+                updateLeftHighlighting()
+                recomputeDiffDebounced()
+            }
+            .onChange(of: rightFile.content) { _, _ in
+                updateRightHighlighting()
+                recomputeDiffDebounced()
+            }
+            .onChange(of: ignoreWhitespace) { _, _ in
+                recomputeDiffDebounced()
+            }
+            .onChange(of: fontSize) { _, newSize in
+                AppearanceManager.shared.codeFontSize = CGFloat(newSize)
+            }
+    }
+
+    // MARK: - View Builders
+
+    private var mainContent: some View {
         VStack(spacing: 0) {
             if showStatsBar && !leftFile.isEmpty && !rightFile.isEmpty {
                 StatsBarView(
@@ -65,61 +140,20 @@ struct ContentView: View {
                 }
             )
         }
-        .toolbar {
-            ToolbarView(
-                displayMode: displayModeBinding,
-                ignoreWhitespace: $ignoreWhitespace,
-                wordWrapEnabled: $wordWrapEnabled,
-                onCopyDiff: copyDiff,
-                onExportDiff: exportDiff
-            )
-        }
-        .onChange(of: leftFile.content) { _, _ in
-            updateLeftHighlighting()
-            recomputeDiffDebounced()
-        }
-        .onChange(of: rightFile.content) { _, _ in
-            updateRightHighlighting()
-            recomputeDiffDebounced()
-        }
-        .onChange(of: ignoreWhitespace) { _, _ in
-            recomputeDiffDebounced()
-        }
-        .onChange(of: fontSize) { _, newSize in
-            AppearanceManager.shared.codeFontSize = CGFloat(newSize)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openLeftFile)) { _ in
-            openFilePanel { url in loadFile(url, into: leftFile) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openRightFile)) { _ in
-            openFilePanel { url in loadFile(url, into: rightFile) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .saveFile)) { _ in
-            saveCurrentFile()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .navigateNextHunk)) { _ in
-            navigateHunk(forward: true)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .navigatePrevHunk)) { _ in
-            navigateHunk(forward: false)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleDisplayMode)) { _ in
-            displayModeRaw = displayMode == .sideBySide ? DisplayMode.unified.rawValue : DisplayMode.sideBySide.rawValue
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .copyDiff)) { _ in
-            copyDiff()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .exportDiff)) { _ in
-            exportDiff()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleIgnoreWhitespace)) { _ in
-            ignoreWhitespace.toggle()
-        }
-        .alert("Save Error", isPresented: $showSaveError) {
-            Button("OK") {}
-        } message: {
-            Text(saveErrorMessage)
-        }
+    }
+
+    private var toolbarContent: some ToolbarContent {
+        ToolbarView(
+            displayMode: displayModeBinding,
+            ignoreWhitespace: $ignoreWhitespace,
+            wordWrapEnabled: $wordWrapEnabled,
+            onCopyDiff: copyDiff,
+            onExportDiff: exportDiff,
+            onUndo: { undoManager?.undo() },
+            onRedo: { undoManager?.redo() },
+            canUndo: canUndo,
+            canRedo: canRedo
+        )
     }
 
     // MARK: - Computed Properties
@@ -267,15 +301,43 @@ struct ContentView: View {
         scrollCoordinator.scrollToRow(targetRow, rowHeights: rowHeightCoordinator.rowHeights)
     }
 
+    // MARK: - Undo State
+
+    private func updateUndoState() {
+        canUndo = undoManager?.canUndo ?? false
+        canRedo = undoManager?.canRedo ?? false
+    }
+
     // MARK: - Line Editing
 
     private func updateLine(in file: DiffFile, lineNumber: Int, newText: String) {
         var lines = file.content.components(separatedBy: "\n")
         let index = lineNumber - 1
         guard index >= 0 && index < lines.count else { return }
+        let oldText = lines[index]
+        guard oldText != newText else { return }
+
         lines[index] = newText
         file.content = lines.joined(separator: "\n")
         file.markEdited()
+
+        if file.url != nil {
+            try? file.save()
+        }
+
+        undoManager?.registerUndo(withTarget: file) { targetFile in
+            // Re-apply oldText to undo; this will register a redo with newText
+            var undoLines = targetFile.content.components(separatedBy: "\n")
+            let undoIndex = lineNumber - 1
+            guard undoIndex >= 0 && undoIndex < undoLines.count else { return }
+            undoLines[undoIndex] = oldText
+            targetFile.content = undoLines.joined(separator: "\n")
+            targetFile.markEdited()
+            if targetFile.url != nil {
+                try? targetFile.save()
+            }
+        }
+        undoManager?.setActionName("Edit Line \(lineNumber)")
     }
 
     // MARK: - Actions

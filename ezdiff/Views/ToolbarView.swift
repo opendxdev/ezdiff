@@ -11,9 +11,31 @@ struct ToolbarView: ToolbarContent {
     @Binding var wordWrapEnabled: Bool
     let onCopyDiff: () -> Void
     let onExportDiff: () -> Void
+    let onUndo: () -> Void
+    let onRedo: () -> Void
+    let canUndo: Bool
+    let canRedo: Bool
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                onUndo()
+            } label: {
+                Label("Undo", systemImage: "arrow.uturn.backward")
+            }
+            .disabled(!canUndo)
+            .help("Undo (⌘Z)")
+
+            Button {
+                onRedo()
+            } label: {
+                Label("Redo", systemImage: "arrow.uturn.forward")
+            }
+            .disabled(!canRedo)
+            .help("Redo (⇧⌘Z)")
+
+            Divider()
+
             Button {
                 displayMode = displayMode == .sideBySide ? .unified : .sideBySide
             } label: {
