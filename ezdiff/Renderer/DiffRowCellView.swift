@@ -137,7 +137,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
         doneButton.isHidden = false
 
-        textField_.becomeFirstResponder()
+        textField_.window?.makeFirstResponder(textField_)
         textField_.selectText(nil)
     }
 

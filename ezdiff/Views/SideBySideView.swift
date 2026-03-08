@@ -61,7 +61,7 @@ struct SideBySideView: View {
 
                 DraggableDivider()
                     .gesture(
-                        DragGesture()
+                        DragGesture(coordinateSpace: .named("sideBySide"))
                             .onChanged { value in
                                 let newRatio = value.location.x / availableWidth
                                 dividerRatio = min(max(newRatio, Constants.PaneDivider.minPaneRatio), 1 - Constants.PaneDivider.minPaneRatio)
@@ -101,6 +101,7 @@ struct SideBySideView: View {
                 updatePaneWidth(totalWidth: totalWidth, dividerWidth: dividerWidth)
             }
         }
+        .coordinateSpace(name: "sideBySide")
         .task(id: DiffDataKey(
             leftCount: diffResult.leftLines.count,
             rightCount: diffResult.rightLines.count,
