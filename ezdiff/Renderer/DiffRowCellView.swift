@@ -13,6 +13,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
     var onTextChanged: (() -> Void)?
     var currentText: String { textField_.stringValue }
     private var isEditing = false
+    private var suppressEndEditing = false
     private var plainText = ""
 
     override init(frame frameRect: NSRect) {
@@ -145,8 +146,12 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
 
         doneButton.isHidden = false
 
+        suppressEndEditing = true
         textField_.window?.makeFirstResponder(textField_)
         textField_.selectText(nil)
+        DispatchQueue.main.async { [weak self] in
+            self?.suppressEndEditing = false
+        }
     }
 
     func exitEditMode() {
@@ -175,7 +180,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
     // MARK: - NSTextFieldDelegate
 
     func controlTextDidEndEditing(_ obj: Notification) {
-        if isEditing {
+        if isEditing && !suppressEndEditing {
             exitEditMode()
         }
     }
@@ -225,6 +230,7 @@ final class DiffRowCellView: NSTableCellView, NSTextFieldDelegate {
         layer?.backgroundColor = nil
         onEditCommit = nil
         onTextChanged = nil
+        suppressEndEditing = false
         plainText = ""
     }
 }
